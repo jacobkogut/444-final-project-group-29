@@ -58,6 +58,12 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define BTN_Pin GPIO_PIN_13
+#define BTN_GPIO_Port GPIOC
+#define BTN_EXTI_IRQn EXTI15_10_IRQn
+#define DATA_RDY_SPI_Pin GPIO_PIN_1
+#define DATA_RDY_SPI_GPIO_Port GPIOE
+#define DATA_RDY_SPI_EXTI_IRQn EXTI1_IRQn
 
 /* USER CODE BEGIN Private defines */
 extern  SPI_HandleTypeDef hspi;

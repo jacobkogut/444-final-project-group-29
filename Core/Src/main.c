@@ -27,6 +27,12 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
+enum {
+	SEND,
+	RECV,
+	STANDBY
+} state = STANDBY;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -37,19 +43,39 @@
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 
+#define N_MIC_SAMPLES 600
+
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+DFSDM_Filter_HandleTypeDef hdfsdm1_filter0;
+DFSDM_Channel_HandleTypeDef hdfsdm1_channel2;
+DMA_HandleTypeDef hdma_dfsdm1_flt0;
+
+TIM_HandleTypeDef htim2;
+
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
+int32_t raw_mic_sample_buff1[N_MIC_SAMPLES];
+int32_t raw_mic_sample_buff2[N_MIC_SAMPLES];
+int16_t proc_mic_sample_buff[N_MIC_SAMPLES];
+
+
+int curr_empty_raw_buff = 0;
+int ready_to_send_full_buff = 0;
+
+
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_DFSDM1_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 void terminal_print(const char* msg);
 /* USER CODE END PFP */
@@ -88,7 +114,10 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART1_UART_Init();
+  MX_DFSDM1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   if(WIFI_Init() != WIFI_STATUS_OK){
 	  Error_Handler();
@@ -98,7 +127,9 @@ int main(void)
 	  terminal_print("Connection attempt failed, retrying\r\n");
   }
 
-  uint8_t ip_addr[] = {192, 168, 2, 21};
+  terminal_print("Connection succeeded\r\n");
+
+  uint8_t ip_addr[] = {192, 168, 2, 17};
 
 
 
@@ -117,8 +148,23 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  if(WIFI_SendData(0, (const uint8_t *) "teststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststeststests", 300, NULL, 0) != WIFI_STATUS_OK){
-//			  Error_Handler();
+
+	  switch(state){
+	  case STANDBY:
+		  break;
+	  case SEND:
+		  if(ready_to_send_full_buff){
+			  uint16_t data_sent = 0;
+			  if(WIFI_SendData(0, (const uint8_t *) proc_mic_sample_buff, N_MIC_SAMPLES*2, &data_sent, 0) != WIFI_STATUS_OK){
+				  terminal_print("Failed to send buffer\r\n");
+			  }
+
+
+//			  char buff[100];
+//			  sprintf(buff, "Sent %d samples\r\n", data_sent / 2);
+//			  terminal_print(buff);
+			  ready_to_send_full_buff = 0;
+		  }
 	  }
   }
   /* USER CODE END 3 */
@@ -175,6 +221,104 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief DFSDM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_DFSDM1_Init(void)
+{
+
+  /* USER CODE BEGIN DFSDM1_Init 0 */
+
+  /* USER CODE END DFSDM1_Init 0 */
+
+  /* USER CODE BEGIN DFSDM1_Init 1 */
+
+  /* USER CODE END DFSDM1_Init 1 */
+  hdfsdm1_filter0.Instance = DFSDM1_Filter0;
+  hdfsdm1_filter0.Init.RegularParam.Trigger = DFSDM_FILTER_SW_TRIGGER;
+  hdfsdm1_filter0.Init.RegularParam.FastMode = ENABLE;
+  hdfsdm1_filter0.Init.RegularParam.DmaMode = ENABLE;
+  hdfsdm1_filter0.Init.FilterParam.SincOrder = DFSDM_FILTER_SINC3_ORDER;
+  hdfsdm1_filter0.Init.FilterParam.Oversampling = 120;
+  hdfsdm1_filter0.Init.FilterParam.IntOversampling = 1;
+  if (HAL_DFSDM_FilterInit(&hdfsdm1_filter0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  hdfsdm1_channel2.Instance = DFSDM1_Channel2;
+  hdfsdm1_channel2.Init.OutputClock.Activation = ENABLE;
+  hdfsdm1_channel2.Init.OutputClock.Selection = DFSDM_CHANNEL_OUTPUT_CLOCK_SYSTEM;
+  hdfsdm1_channel2.Init.OutputClock.Divider = 50;
+  hdfsdm1_channel2.Init.Input.Multiplexer = DFSDM_CHANNEL_EXTERNAL_INPUTS;
+  hdfsdm1_channel2.Init.Input.DataPacking = DFSDM_CHANNEL_STANDARD_MODE;
+  hdfsdm1_channel2.Init.Input.Pins = DFSDM_CHANNEL_SAME_CHANNEL_PINS;
+  hdfsdm1_channel2.Init.SerialInterface.Type = DFSDM_CHANNEL_SPI_RISING;
+  hdfsdm1_channel2.Init.SerialInterface.SpiClock = DFSDM_CHANNEL_SPI_CLOCK_INTERNAL;
+  hdfsdm1_channel2.Init.Awd.FilterOrder = DFSDM_CHANNEL_FASTSINC_ORDER;
+  hdfsdm1_channel2.Init.Awd.Oversampling = 1;
+  hdfsdm1_channel2.Init.Offset = 0;
+  hdfsdm1_channel2.Init.RightBitShift = 0x00;
+  if (HAL_DFSDM_ChannelInit(&hdfsdm1_channel2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_DFSDM_FilterConfigRegChannel(&hdfsdm1_filter0, DFSDM_CHANNEL_2, DFSDM_CONTINUOUS_CONV_ON) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN DFSDM1_Init 2 */
+
+  /* USER CODE END DFSDM1_Init 2 */
+
+}
+
+/**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 0;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 6000;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -223,6 +367,23 @@ static void MX_USART1_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMAMUX1_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -235,15 +396,21 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOE, GPIO_PIN_8, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : BTN_Pin */
+  GPIO_InitStruct.Pin = BTN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(BTN_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PE8 */
   GPIO_InitStruct.Pin = GPIO_PIN_8;
@@ -259,15 +426,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PE1 */
-  GPIO_InitStruct.Pin = GPIO_PIN_1;
+  /*Configure GPIO pin : DATA_RDY_SPI_Pin */
+  GPIO_InitStruct.Pin = DATA_RDY_SPI_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+  HAL_GPIO_Init(DATA_RDY_SPI_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -276,16 +446,62 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+
+void btn_isr(){
+	if(state == SEND){
+		state = STANDBY;
+	} else {
+		state = SEND;
+		if(curr_empty_raw_buff){
+			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff2, N_MIC_SAMPLES);
+			curr_empty_raw_buff = 0;
+		} else {
+			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1, N_MIC_SAMPLES);
+			curr_empty_raw_buff = 1;
+		}
+	}
+
+}
+
+
+void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef* hdfsdm_filter){
+	if(state != SEND){
+		return;
+	}
+
+	if(ready_to_send_full_buff){
+		terminal_print("Failed to send mic samples in time, overwriting\r\n");
+	}
+	ready_to_send_full_buff = 1;
+	HAL_DFSDM_FilterRegularStop_DMA(&hdfsdm1_filter0);
+
+
+	if(curr_empty_raw_buff){
+		for(int i = 0; i < N_MIC_SAMPLES; ++i){
+			proc_mic_sample_buff[i] = (int16_t) (raw_mic_sample_buff2[i] >> 8) ;
+		}
+		HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff2, N_MIC_SAMPLES);
+		curr_empty_raw_buff = 0;
+	} else {
+		for(int i = 0; i < N_MIC_SAMPLES; ++i){
+			proc_mic_sample_buff[i] = (int16_t) (raw_mic_sample_buff1[i] >> 8) ;
+		}
+		HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1, N_MIC_SAMPLES);
+		curr_empty_raw_buff = 1;
+	}
+}
+
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   switch (GPIO_Pin)
   {
-//    case (USER_BUTTON_PIN):
-//    {
-//      Button_ISR();
-//      break;
-//    }
-    case (GPIO_PIN_1):
+    case (BTN_Pin):
+    {
+      btn_isr();
+      break;
+    }
+    case (DATA_RDY_SPI_Pin):
     {
       SPI_WIFI_ISR();
       break;
