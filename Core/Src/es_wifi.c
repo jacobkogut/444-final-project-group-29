@@ -1936,8 +1936,8 @@ ES_WIFI_Status_t ES_WIFI_StartServerSingleConn(ES_WIFIObject_t *Obj, ES_WIFI_Con
         ret = AT_ExecuteCommand(Obj, Obj->CmdData, Obj->CmdData);
         if (ret == ES_WIFI_STATUS_OK)
         {
-          /* multi accept mode */
-          sprintf((char*)Obj->CmdData,"P5=11\r");
+          /* single accept mode */
+          sprintf((char*)Obj->CmdData,"P5=1\r");
           ret = AT_ExecuteCommand(Obj, Obj->CmdData, Obj->CmdData);
 
  #if (ES_WIFI_USE_UART == 1)
@@ -2164,7 +2164,7 @@ ES_WIFI_Status_t ES_WIFI_StartServerMultiConn(ES_WIFIObject_t *Obj, ES_WIFI_Conn
 
           if (ret == ES_WIFI_STATUS_OK)
           {
-            sprintf((char*)Obj->CmdData,"P5=1\r");
+            sprintf((char*)Obj->CmdData,"P5=11\r");
             ret = AT_ExecuteCommand(Obj, Obj->CmdData, Obj->CmdData);
 
             if (ret == ES_WIFI_STATUS_OK)

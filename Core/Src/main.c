@@ -29,7 +29,6 @@
 
 enum {
 	SEND,
-	RECV,
 	STANDBY
 } state = STANDBY;
 
@@ -44,10 +43,15 @@ enum {
 /* USER CODE BEGIN PM */
 
 #define N_MIC_SAMPLES 600
+#define RECV_SOCK 1
+#define SEND_SOCK 0
 
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+DAC_HandleTypeDef hdac1;
+DMA_HandleTypeDef hdma_dac1_ch1;
+
 DFSDM_Filter_HandleTypeDef hdfsdm1_filter0;
 DFSDM_Channel_HandleTypeDef hdfsdm1_channel2;
 DMA_HandleTypeDef hdma_dfsdm1_flt0;
@@ -59,12 +63,18 @@ UART_HandleTypeDef huart1;
 /* USER CODE BEGIN PV */
 int32_t raw_mic_sample_buff1[N_MIC_SAMPLES];
 int32_t raw_mic_sample_buff2[N_MIC_SAMPLES];
-int16_t proc_mic_sample_buff[N_MIC_SAMPLES];
+int16_t send_mic_sample_buff[N_MIC_SAMPLES];
+int16_t recv_mic_sample_buff1[N_MIC_SAMPLES];
+int16_t recv_mic_sample_buff2[N_MIC_SAMPLES];
 
 
-int curr_empty_raw_buff = 0;
+int curr_unused_raw_buff = 0;
+int curr_unused_recv_buff = 0;
 int ready_to_send_full_buff = 0;
-
+int ready_to_play = 1;
+int recv_buff_size1 = 0;
+int recv_buff_size2 = 0;
+int switch_states = 0;
 
 
 /* USER CODE END PV */
@@ -76,6 +86,7 @@ static void MX_DMA_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_DFSDM1_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_DAC1_Init(void);
 /* USER CODE BEGIN PFP */
 void terminal_print(const char* msg);
 /* USER CODE END PFP */
@@ -118,10 +129,12 @@ int main(void)
   MX_USART1_UART_Init();
   MX_DFSDM1_Init();
   MX_TIM2_Init();
+  MX_DAC1_Init();
   /* USER CODE BEGIN 2 */
   if(WIFI_Init() != WIFI_STATUS_OK){
 	  Error_Handler();
   }
+
 
   while(WIFI_Connect("BELL851", "F5433C661562", WIFI_ECN_WPA2_PSK) != WIFI_STATUS_OK){
 	  terminal_print("Connection attempt failed, retrying\r\n");
@@ -129,15 +142,14 @@ int main(void)
 
   terminal_print("Connection succeeded\r\n");
 
-  uint8_t ip_addr[] = {192, 168, 2, 17};
+  HAL_TIM_Base_Start(&htim2);
 
 
-
-  if(WIFI_OpenClientConnection(0, ES_WIFI_UDP_CONNECTION, "", ip_addr, 4000, 80) != WIFI_STATUS_OK){
-  	  Error_Handler();
+  if(WIFI_StartServer(RECV_SOCK, WIFI_UDP_PROTOCOL, 0, "recv_server", 90) != WIFI_STATUS_OK){
+	  Error_Handler();
   }
 
-
+  uint8_t ip_addr[] = {192, 168, 2, 17};
 
   /* USER CODE END 2 */
 
@@ -151,18 +163,84 @@ int main(void)
 
 	  switch(state){
 	  case STANDBY:
-		  break;
-	  case SEND:
-		  if(ready_to_send_full_buff){
-			  uint16_t data_sent = 0;
-			  if(WIFI_SendData(0, (const uint8_t *) proc_mic_sample_buff, N_MIC_SAMPLES*2, &data_sent, 0) != WIFI_STATUS_OK){
-				  terminal_print("Failed to send buffer\r\n");
+		  if(switch_states){
+			  switch_states = 0;
+			  state = SEND;
+
+			  if(WIFI_StopServer(RECV_SOCK) != WIFI_STATUS_OK){
+				  Error_Handler();
 			  }
 
 
-//			  char buff[100];
-//			  sprintf(buff, "Sent %d samples\r\n", data_sent / 2);
-//			  terminal_print(buff);
+			  if(WIFI_OpenClientConnection(SEND_SOCK, WIFI_UDP_PROTOCOL, "send_client", ip_addr, 4000, 80) != WIFI_STATUS_OK){
+				  Error_Handler();
+			  }
+
+			  continue;
+
+		  }
+
+		  uint16_t bytes_received = 0;
+
+		  int16_t *recv_buffer = curr_unused_recv_buff ? recv_mic_sample_buff2 : recv_mic_sample_buff1;
+		  int* recv_buff_size = curr_unused_recv_buff ? &recv_buff_size2 : &recv_buff_size1;
+		  recv_buffer += *recv_buff_size;
+
+		  if(WIFI_ReceiveData(RECV_SOCK, (uint8_t *) recv_buffer, (N_MIC_SAMPLES - *recv_buff_size)*2, &bytes_received, 0) != WIFI_STATUS_OK){
+			  terminal_print("Failed to receive\r\n");
+		  }
+
+		  if(bytes_received <= 0){
+			  continue;
+		  }
+
+		  for(int i = 0; i < bytes_received / 2; ++i){
+			  recv_buffer[i] = (recv_buffer[i] >> 4) + 2048;
+		  }
+
+		  *recv_buff_size += bytes_received / 2;
+
+		  if(*recv_buff_size >= N_MIC_SAMPLES){
+			  *recv_buff_size = 0;
+
+			  if(ready_to_play){
+				  ready_to_play = 0;
+				  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *) (curr_unused_recv_buff ? recv_mic_sample_buff2 : recv_mic_sample_buff1), bytes_received / 2, DAC_ALIGN_12B_R);
+			  } else {
+				  terminal_print("Playback not fast enough\r\n");
+			  }
+
+			  curr_unused_recv_buff = !curr_unused_recv_buff;
+		  }
+
+
+
+
+		  break;
+	  case SEND:
+		  if(switch_states){
+			  switch_states = 0;
+			  state = STANDBY;
+
+			  if(WIFI_CloseClientConnection(SEND_SOCK) != WIFI_STATUS_OK){
+				  Error_Handler();
+			  }
+
+
+			  if(WIFI_StartServer(RECV_SOCK, WIFI_UDP_PROTOCOL, 0, "recv_server", 90) != WIFI_STATUS_OK){
+				  Error_Handler();
+			  }
+
+			  continue;
+
+		  }
+
+		  if(ready_to_send_full_buff){
+			  uint16_t data_sent = 0;
+			  if(WIFI_SendData(SEND_SOCK, (const uint8_t *) send_mic_sample_buff, N_MIC_SAMPLES*2, &data_sent, 0) != WIFI_STATUS_OK){
+				  terminal_print("Failed to send buffer\r\n");
+			  }
+
 			  ready_to_send_full_buff = 0;
 		  }
 	  }
@@ -218,6 +296,50 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief DAC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_DAC1_Init(void)
+{
+
+  /* USER CODE BEGIN DAC1_Init 0 */
+
+  /* USER CODE END DAC1_Init 0 */
+
+  DAC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN DAC1_Init 1 */
+
+  /* USER CODE END DAC1_Init 1 */
+
+  /** DAC Initialization
+  */
+  hdac1.Instance = DAC1;
+  if (HAL_DAC_Init(&hdac1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** DAC channel OUT1 config
+  */
+  sConfig.DAC_SampleAndHold = DAC_SAMPLEANDHOLD_DISABLE;
+  sConfig.DAC_Trigger = DAC_TRIGGER_T2_TRGO;
+  sConfig.DAC_HighFrequency = DAC_HIGH_FREQUENCY_INTERFACE_MODE_ABOVE_80MHZ;
+  sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+  sConfig.DAC_ConnectOnChipPeripheral = DAC_CHIPCONNECT_DISABLE;
+  sConfig.DAC_UserTrimming = DAC_TRIMMING_FACTORY;
+  if (HAL_DAC_ConfigChannel(&hdac1, &sConfig, DAC_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN DAC1_Init 2 */
+
+  /* USER CODE END DAC1_Init 2 */
+
 }
 
 /**
@@ -377,6 +499,9 @@ static void MX_DMA_Init(void)
   __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
+  /* DMA1_Channel1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
   /* DMA1_Channel2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
@@ -397,6 +522,7 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
@@ -448,18 +574,17 @@ static void MX_GPIO_Init(void)
 
 
 void btn_isr(){
-	if(state == SEND){
-		state = STANDBY;
-	} else {
-		state = SEND;
-		if(curr_empty_raw_buff){
+	if(state == STANDBY){
+		HAL_DFSDM_FilterRegularStop_DMA(&hdfsdm1_filter0);
+		if(curr_unused_raw_buff){
 			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff2, N_MIC_SAMPLES);
-			curr_empty_raw_buff = 0;
+			curr_unused_raw_buff = 0;
 		} else {
 			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1, N_MIC_SAMPLES);
-			curr_empty_raw_buff = 1;
+			curr_unused_raw_buff = 1;
 		}
 	}
+	switch_states = 1;
 
 }
 
@@ -476,18 +601,18 @@ void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef* hdfsdm_filt
 	HAL_DFSDM_FilterRegularStop_DMA(&hdfsdm1_filter0);
 
 
-	if(curr_empty_raw_buff){
+	if(curr_unused_raw_buff){
 		for(int i = 0; i < N_MIC_SAMPLES; ++i){
-			proc_mic_sample_buff[i] = (int16_t) (raw_mic_sample_buff2[i] >> 8) ;
+			send_mic_sample_buff[i] = (int16_t) (raw_mic_sample_buff2[i] >> 8) ;
 		}
 		HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff2, N_MIC_SAMPLES);
-		curr_empty_raw_buff = 0;
+		curr_unused_raw_buff = 0;
 	} else {
 		for(int i = 0; i < N_MIC_SAMPLES; ++i){
-			proc_mic_sample_buff[i] = (int16_t) (raw_mic_sample_buff1[i] >> 8) ;
+			send_mic_sample_buff[i] = (int16_t) (raw_mic_sample_buff1[i] >> 8) ;
 		}
 		HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1, N_MIC_SAMPLES);
-		curr_empty_raw_buff = 1;
+		curr_unused_raw_buff = 1;
 	}
 }
 
@@ -512,6 +637,16 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     }
   }
 }
+
+
+void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac){
+	if(hdac == &hdac1){
+		ready_to_play = 1;
+		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+	}
+}
+
+
 
 void terminal_print(const char* msg){
 	HAL_UART_Transmit(&huart1, (uint8_t *) msg, strlen(msg), 100);
