@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "arm_math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -71,7 +72,6 @@ int16_t recv_mic_sample_buff2[N_MIC_SAMPLES];
 int curr_unused_raw_buff = 0;
 int curr_unused_recv_buff = 0;
 int ready_to_send_full_buff = 0;
-int ready_to_play = 1;
 int recv_buff_size1 = 0;
 int recv_buff_size2 = 0;
 int switch_states = 0;
@@ -186,7 +186,7 @@ int main(void)
 		  int* recv_buff_size = curr_unused_recv_buff ? &recv_buff_size2 : &recv_buff_size1;
 		  recv_buffer += *recv_buff_size;
 
-		  if(WIFI_ReceiveData(RECV_SOCK, (uint8_t *) recv_buffer, (N_MIC_SAMPLES - *recv_buff_size)*2, &bytes_received, 0) != WIFI_STATUS_OK){
+		  if(WIFI_ReceiveData(RECV_SOCK, (uint8_t *) recv_buffer, N_MIC_SAMPLES*2, &bytes_received, 0) != WIFI_STATUS_OK){
 			  terminal_print("Failed to receive\r\n");
 		  }
 
@@ -194,21 +194,21 @@ int main(void)
 			  continue;
 		  }
 
-		  for(int i = 0; i < bytes_received / 2; ++i){
-			  recv_buffer[i] = (recv_buffer[i] >> 4) + 2048;
-		  }
+//		  for(int i = 0; i < bytes_received / 2; ++i){
+//			  recv_buffer[i] = (recv_buffer[i] >> 4) + 2048;
+//		  }
+
+		  arm_shift_q15(recv_buffer, -4, recv_buffer, bytes_received / 2);
+		  arm_offset_q15(recv_buffer, 0x800, recv_buffer, bytes_received / 2);
+
 
 		  *recv_buff_size += bytes_received / 2;
 
 		  if(*recv_buff_size >= N_MIC_SAMPLES){
 			  *recv_buff_size = 0;
 
-			  if(ready_to_play){
-				  ready_to_play = 0;
-				  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *) (curr_unused_recv_buff ? recv_mic_sample_buff2 : recv_mic_sample_buff1), bytes_received / 2, DAC_ALIGN_12B_R);
-			  } else {
-				  terminal_print("Playback not fast enough\r\n");
-			  }
+			  HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+			  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *) (curr_unused_recv_buff ? recv_mic_sample_buff2 : recv_mic_sample_buff1), N_MIC_SAMPLES, DAC_ALIGN_12B_R);
 
 			  curr_unused_recv_buff = !curr_unused_recv_buff;
 		  }
@@ -380,7 +380,7 @@ static void MX_DFSDM1_Init(void)
   hdfsdm1_channel2.Init.Awd.FilterOrder = DFSDM_CHANNEL_FASTSINC_ORDER;
   hdfsdm1_channel2.Init.Awd.Oversampling = 1;
   hdfsdm1_channel2.Init.Offset = 0;
-  hdfsdm1_channel2.Init.RightBitShift = 0x00;
+  hdfsdm1_channel2.Init.RightBitShift = 0x09;
   if (HAL_DFSDM_ChannelInit(&hdfsdm1_channel2) != HAL_OK)
   {
     Error_Handler();
@@ -583,6 +583,8 @@ void btn_isr(){
 			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1, N_MIC_SAMPLES);
 			curr_unused_raw_buff = 1;
 		}
+	} else {
+		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
 	}
 	switch_states = 1;
 
@@ -600,16 +602,17 @@ void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef* hdfsdm_filt
 	ready_to_send_full_buff = 1;
 	HAL_DFSDM_FilterRegularStop_DMA(&hdfsdm1_filter0);
 
-
+	// change below shift depending on the sensitivity you want in the mic
+	// Ex: 10 better at recording louder sounds, 8 better at recording quieter sounds
 	if(curr_unused_raw_buff){
 		for(int i = 0; i < N_MIC_SAMPLES; ++i){
-			send_mic_sample_buff[i] = (int16_t) (raw_mic_sample_buff2[i] >> 8) ;
+			send_mic_sample_buff[i] = (int16_t) (raw_mic_sample_buff2[i]);
 		}
 		HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff2, N_MIC_SAMPLES);
 		curr_unused_raw_buff = 0;
 	} else {
 		for(int i = 0; i < N_MIC_SAMPLES; ++i){
-			send_mic_sample_buff[i] = (int16_t) (raw_mic_sample_buff1[i] >> 8) ;
+			send_mic_sample_buff[i] = (int16_t) (raw_mic_sample_buff1[i]);
 		}
 		HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1, N_MIC_SAMPLES);
 		curr_unused_raw_buff = 1;
@@ -637,15 +640,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     }
   }
 }
-
-
-void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac){
-	if(hdac == &hdac1){
-		ready_to_play = 1;
-		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
-	}
-}
-
 
 
 void terminal_print(const char* msg){
