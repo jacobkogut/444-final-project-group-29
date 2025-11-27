@@ -1,0 +1,281 @@
+ST Edge AI Core v2.2.0-20266 2adc00962
+Created date          : 2025-11-27 01:23:38
+Parameters            : generate --target stm32l4 --name encoder -m /Users/williamzimmerman/encoder_fixed.onnx --compression none --verbosity 1 --workspace /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace176118903157093440073015061748674 --output /Users/williamzimmerman/.stm32cubemx/encoder_output
+
+Exec/report summary (generate)
+--------------------------------------------------------------------------------------------------------------------------
+model file         :   /Users/williamzimmerman/encoder_fixed.onnx                                                         
+type               :   onnx                                                                                               
+c_name             :   encoder                                                                                            
+compression        :   none                                                                                               
+options            :   allocate-inputs, allocate-outputs                                                                  
+optimization       :   balanced                                                                                           
+target/series      :   stm32l4                                                                                            
+workspace dir      :   /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace176118903157093440073015061748674   
+output dir         :   /Users/williamzimmerman/.stm32cubemx/encoder_output                                                
+model_fmt          :   float                                                                                              
+model_name         :   encoder_fixed                                                                                      
+model_hash         :   0x267d2af1d26e3e4a31ae191a16d32221                                                                 
+params #           :   37,312 items (145.75 KiB)                                                                          
+--------------------------------------------------------------------------------------------------------------------------
+input 1/1          :   'input', f32(1x1x512x1), 2.00 KBytes, activations                                                  
+output 1/1         :   'latent_Transpose_0', f32(1x32x1x64), 8.00 KBytes, activations                                     
+macc               :   4,801,856                                                                                          
+weights (ro)       :   149,248 B (145.75 KiB) (1 segment)                                                                 
+activations (rw)   :   98,560 B (96.25 KiB) (1 segment) *                                                                 
+ram (total)        :   98,560 B (96.25 KiB) = 98,560 + 0 + 0                                                              
+--------------------------------------------------------------------------------------------------------------------------
+(*) 'input'/'output' buffers are allocated in the activations buffer
+
+Model name - encoder_fixed
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+m_id   layer (type,original)         oshape                 param/size             macc   connected to   | c_size   c_macc          c_type                         
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+0      input (Input, )               [b:1,h:1,w:512,c:1]                                                 |                          
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+1      conv2d (Conv2D, Conv)         [b:1,h:1,w:256,c:32]   160/640              32,800          input   |          +1,024(+3.1%)   Conv2D_/Transpose_[o][0, 13]   
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+2      relu (Nonlinearity, Relu)     [b:1,h:1,w:256,c:32]                         8,192         conv2d   |                          Nonlinearity_[1]               
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+3      conv2d_1 (Conv2D, Conv)       [b:1,h:1,w:256,c:32]   3,104/12,416        786,464           relu   |                          Conv2D_[2]                     
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+4      relu_1 (Nonlinearity, Relu)   [b:1,h:1,w:256,c:32]                         8,192       conv2d_1   |                          Nonlinearity_[3]               
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+5      conv2d_2 (Conv2D, Conv)       [b:1,h:1,w:256,c:32]   1,056/4,224         262,176         relu_1   |                          Conv2D_[4]                     
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+6      add (Eltwise, Add)            [b:1,h:1,w:256,c:32]                         8,192           relu   |                          Eltwise/add_[5]                
+                                                                                              conv2d_2   | 
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+7      conv2d_3 (Conv2D, Conv)       [b:1,h:1,w:128,c:64]   8,256/33,024      1,048,640            add   |                          Conv2D_[6]                     
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+8      relu_2 (Nonlinearity, Relu)   [b:1,h:1,w:128,c:64]                         8,192       conv2d_3   |                          Nonlinearity_[7]               
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+9      conv2d_4 (Conv2D, Conv)       [b:1,h:1,w:128,c:64]   12,352/49,408     1,572,928         relu_2   |                          Conv2D_[8]                     
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+10     relu_3 (Nonlinearity, Relu)   [b:1,h:1,w:128,c:64]                         8,192       conv2d_4   |                          Nonlinearity_[9]               
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+11     conv2d_5 (Conv2D, Conv)       [b:1,h:1,w:128,c:64]   4,160/16,640        524,352         relu_3   |                          Conv2D_[10]                    
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+12     add_1 (Eltwise, Add)          [b:1,h:1,w:128,c:64]                         8,192         relu_2   |                          Eltwise/add_[11]               
+                                                                                              conv2d_5   | 
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+13     latent (Conv2D, Conv)         [b:1,h:1,w:64,c:32]    8,224/32,896        524,320          add_1   |                          Conv2D_[12]                    
+------ ----------------------------- ---------------------- --------------- ----------- -------------- --- -------- --------------- ------------------------------ 
+model/c-model: macc=4,800,832/4,801,856 +1,024(+0.0%) weights=149,248/149,248  activations=--/98,560 io=--/0
+
+
+
+Generated C-graph summary
+------------------------------------------------------------------------------------------------------------------------
+model name            : encoder_fixed
+c-name                : encoder
+c-node #              : 14
+c-array #             : 36
+activations size      : 98560 (1 segment)
+weights size          : 149248 (1 segment)
+macc                  : 4801856
+inputs                : ['input_output']
+outputs               : ['latent_Transpose_0_output']
+
+C-Arrays (36)
+------ --------------------------- ------------- ------------------------- ------------- --------- 
+c_id   name (*_array)              item/size     domain/mem-pool           c-type        comment   
+------ --------------------------- ------------- ------------------------- ------------- --------- 
+0      add_1_output                8192/32768    activations/**default**   float                   
+1      add_output                  8192/32768    activations/**default**   float                   
+2      conv2d_1_bias               32/128        weights/weights           const float             
+3      conv2d_1_output             8192/32768    activations/**default**   float                   
+4      conv2d_1_scratch0           96/384        activations/**default**   float                   
+5      conv2d_1_weights            3072/12288    weights/weights           const float             
+6      conv2d_2_bias               32/128        weights/weights           const float             
+7      conv2d_2_output             8192/32768    activations/**default**   float                   
+8      conv2d_2_scratch0           32/128        activations/**default**   float                   
+9      conv2d_2_weights            1024/4096     weights/weights           const float             
+10     conv2d_3_bias               64/256        weights/weights           const float             
+11     conv2d_3_output             8192/32768    activations/**default**   float                   
+12     conv2d_3_scratch0           128/512       activations/**default**   float                   
+13     conv2d_3_weights            8192/32768    weights/weights           const float             
+14     conv2d_4_bias               64/256        weights/weights           const float             
+15     conv2d_4_output             8192/32768    activations/**default**   float                   
+16     conv2d_4_scratch0           192/768       activations/**default**   float                   
+17     conv2d_4_weights            12288/49152   weights/weights           const float             
+18     conv2d_5_bias               64/256        weights/weights           const float             
+19     conv2d_5_output             8192/32768    activations/**default**   float                   
+20     conv2d_5_scratch0           64/256        activations/**default**   float                   
+21     conv2d_5_weights            4096/16384    weights/weights           const float             
+22     conv2d_bias                 32/128        weights/weights           const float             
+23     conv2d_output               8192/32768    activations/**default**   float                   
+24     conv2d_scratch0             4/16          activations/**default**   float                   
+25     conv2d_weights              128/512       weights/weights           const float             
+26     input_output                512/2048      activations/**default**   float         /input    
+27     latent_Transpose_0_output   2048/8192     activations/**default**   float         /output   
+28     latent_bias                 32/128        weights/weights           const float             
+29     latent_output               2048/8192     activations/**default**   float                   
+30     latent_scratch0             256/1024      activations/**default**   float                   
+31     latent_weights              8192/32768    weights/weights           const float             
+32     relu_1_output               8192/32768    activations/**default**   float                   
+33     relu_2_output               8192/32768    activations/**default**   float                   
+34     relu_3_output               8192/32768    activations/**default**   float                   
+35     relu_output                 8192/32768    activations/**default**   float                   
+------ --------------------------- ------------- ------------------------- ------------- --------- 
+
+C-Layers (14)
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+c_id   name (*_layer)       id   layer_type      macc      rom     tensors                        shape (array id)       
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+0      conv2d               1    Conv2D          32800     640     I: input_output                f32(1x1x512x1) (26)    
+                                                                   S: conv2d_scratch0                                    
+                                                                   W: conv2d_weights              f32(32x1x4x1) (25)     
+                                                                   W: conv2d_bias                 f32(32) (22)           
+                                                                   O: conv2d_output               f32(1x1x256x32) (23)   
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+1      relu                 2    Nonlinearity    8192      0       I: conv2d_output               f32(1x1x256x32) (23)   
+                                                                   O: relu_output                 f32(1x1x256x32) (35)   
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+2      conv2d_1             3    Conv2D          786464    12416   I: relu_output                 f32(1x1x256x32) (35)   
+                                                                   S: conv2d_1_scratch0                                  
+                                                                   W: conv2d_1_weights            f32(32x1x3x32) (5)     
+                                                                   W: conv2d_1_bias               f32(32) (2)            
+                                                                   O: conv2d_1_output             f32(1x1x256x32) (3)    
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+3      relu_1               4    Nonlinearity    8192      0       I: conv2d_1_output             f32(1x1x256x32) (3)    
+                                                                   O: relu_1_output               f32(1x1x256x32) (32)   
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+4      conv2d_2             5    Conv2D          262176    4224    I: relu_1_output               f32(1x1x256x32) (32)   
+                                                                   S: conv2d_2_scratch0                                  
+                                                                   W: conv2d_2_weights            f32(32x1x1x32) (9)     
+                                                                   W: conv2d_2_bias               f32(32) (6)            
+                                                                   O: conv2d_2_output             f32(1x1x256x32) (7)    
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+5      add                  6    Eltwise/add     8192      0       I: relu_output                 f32(1x1x256x32) (35)   
+                                                                   I: conv2d_2_output             f32(1x1x256x32) (35)   
+                                                                   O: add_output                  f32(1x1x256x32) (1)    
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+6      conv2d_3             7    Conv2D          1048640   33024   I: add_output                  f32(1x1x256x32) (1)    
+                                                                   S: conv2d_3_scratch0                                  
+                                                                   W: conv2d_3_weights            f32(64x1x4x32) (13)    
+                                                                   W: conv2d_3_bias               f32(64) (10)           
+                                                                   O: conv2d_3_output             f32(1x1x128x64) (11)   
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+7      relu_2               8    Nonlinearity    8192      0       I: conv2d_3_output             f32(1x1x128x64) (11)   
+                                                                   O: relu_2_output               f32(1x1x128x64) (33)   
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+8      conv2d_4             9    Conv2D          1572928   49408   I: relu_2_output               f32(1x1x128x64) (33)   
+                                                                   S: conv2d_4_scratch0                                  
+                                                                   W: conv2d_4_weights            f32(64x1x3x64) (17)    
+                                                                   W: conv2d_4_bias               f32(64) (14)           
+                                                                   O: conv2d_4_output             f32(1x1x128x64) (15)   
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+9      relu_3               10   Nonlinearity    8192      0       I: conv2d_4_output             f32(1x1x128x64) (15)   
+                                                                   O: relu_3_output               f32(1x1x128x64) (34)   
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+10     conv2d_5             11   Conv2D          524352    16640   I: relu_3_output               f32(1x1x128x64) (34)   
+                                                                   S: conv2d_5_scratch0                                  
+                                                                   W: conv2d_5_weights            f32(64x1x1x64) (21)    
+                                                                   W: conv2d_5_bias               f32(64) (18)           
+                                                                   O: conv2d_5_output             f32(1x1x128x64) (19)   
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+11     add_1                12   Eltwise/add     8192      0       I: relu_2_output               f32(1x1x128x64) (33)   
+                                                                   I: conv2d_5_output             f32(1x1x128x64) (33)   
+                                                                   O: add_1_output                f32(1x1x128x64) (0)    
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+12     latent               13   Conv2D          524320    32896   I: add_1_output                f32(1x1x128x64) (0)    
+                                                                   S: latent_scratch0                                    
+                                                                   W: latent_weights              f32(32x1x4x64) (31)    
+                                                                   W: latent_bias                 f32(32) (28)           
+                                                                   O: latent_output               f32(1x1x64x32) (29)    
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+13     latent_Transpose_0   1    Transpose       1024      0       I: latent_output               f32(1x1x64x32) (29)    
+                                                                   O: latent_Transpose_0_output   f32(1x32x1x64) (27)    
+------ -------------------- ---- --------------- --------- ------- ------------------------------ ---------------------- 
+
+
+
+Number of operations per c-layer
+------- ------ -------------------------------- ----------- -------------- 
+c_id    m_id   name (type)                              #op           type 
+------- ------ -------------------------------- ----------- -------------- 
+0       1      conv2d (Conv2D)                       32,800   smul_f32_f32 
+1       2      relu (Nonlinearity)                    8,192     op_f32_f32 
+2       3      conv2d_1 (Conv2D)                    786,464   smul_f32_f32 
+3       4      relu_1 (Nonlinearity)                  8,192     op_f32_f32 
+4       5      conv2d_2 (Conv2D)                    262,176   smul_f32_f32 
+5       6      add (Eltwise/add)                      8,192     op_f32_f32 
+6       7      conv2d_3 (Conv2D)                  1,048,640   smul_f32_f32 
+7       8      relu_2 (Nonlinearity)                  8,192     op_f32_f32 
+8       9      conv2d_4 (Conv2D)                  1,572,928   smul_f32_f32 
+9       10     relu_3 (Nonlinearity)                  8,192     op_f32_f32 
+10      11     conv2d_5 (Conv2D)                    524,352   smul_f32_f32 
+11      12     add_1 (Eltwise/add)                    8,192     op_f32_f32 
+12      13     latent (Conv2D)                      524,320   smul_f32_f32 
+13      1      latent_Transpose_0 (Transpose)         1,024   smul_f32_f32 
+------- ------ -------------------------------- ----------- -------------- 
+total                                             4,801,856 
+
+Number of operation types
+---------------- ----------- ----------- 
+operation type             #           % 
+---------------- ----------- ----------- 
+smul_f32_f32       4,752,704       99.0% 
+op_f32_f32            49,152        1.0% 
+
+Complexity report (model)
+------ ---------- ------------------------- ------------------------- --------- 
+m_id   name       c_macc                    c_rom                     c_id      
+------ ---------- ------------------------- ------------------------- --------- 
+1      conv2d     |                  0.7%   |                  0.4%   [0, 13]   
+2      relu       |                  0.2%   |                  0.0%   [1]       
+3      conv2d_1   ||||||||          16.4%   ||||               8.3%   [2]       
+4      relu_1     |                  0.2%   |                  0.0%   [3]       
+5      conv2d_2   |||                5.5%   ||                 2.8%   [4]       
+6      add        |                  0.2%   |                  0.0%   [5]       
+7      conv2d_3   |||||||||||       21.8%   |||||||||||       22.1%   [6]       
+8      relu_2     |                  0.2%   |                  0.0%   [7]       
+9      conv2d_4   ||||||||||||||||  32.8%   ||||||||||||||||  33.1%   [8]       
+10     relu_3     |                  0.2%   |                  0.0%   [9]       
+11     conv2d_5   ||||||            10.9%   ||||||            11.1%   [10]      
+12     add_1      |                  0.2%   |                  0.0%   [11]      
+13     latent     ||||||            10.9%   ||||||||||        22.0%   [12]      
+------ ---------- ------------------------- ------------------------- --------- 
+macc=4,801,856 weights=149,248 act=98,560 ram_io=0
+ 
+ Requested memory size by section - "stm32l4" target
+ ------------------------------ ------- --------- ------- -------- 
+ module                            text    rodata    data      bss 
+ ------------------------------ ------- --------- ------- -------- 
+ NetworkRuntime1020_CM4_GCC.a     7,620         0       0        0 
+ encoder.o                          932       112   4,704      200 
+ encoder_data.o                      48        16      88        0 
+ lib (toolchain)*                     0         0       0        0 
+ ------------------------------ ------- --------- ------- -------- 
+ RT total**                       8,600       128   4,792      200 
+ ------------------------------ ------- --------- ------- -------- 
+ weights                              0   149,248       0        0 
+ activations                          0         0       0   98,560 
+ io                                   0         0       0        0 
+ ------------------------------ ------- --------- ------- -------- 
+ TOTAL                            8,600   149,376   4,792   98,760 
+ ------------------------------ ------- --------- ------- -------- 
+ *  toolchain objects (libm/libgcc*)
+ ** RT AI runtime objects (kernels+infrastructure)
+  
+  Summary - "stm32l4" target
+  -------------------------------------------------
+               FLASH (ro)     %*   RAM (rw)      % 
+  -------------------------------------------------
+  RT total         13,520   8.3%      4,992   4.8% 
+  -------------------------------------------------
+  TOTAL           162,768           103,552        
+  -------------------------------------------------
+  *  rt/total
+
+
+Generated files (7)
+--------------------------------------------------------------------------- 
+/Users/williamzimmerman/.stm32cubemx/encoder_output/encoder_data_params.h   
+/Users/williamzimmerman/.stm32cubemx/encoder_output/encoder_data_params.c   
+/Users/williamzimmerman/.stm32cubemx/encoder_output/encoder_data.h          
+/Users/williamzimmerman/.stm32cubemx/encoder_output/encoder_data.c          
+/Users/williamzimmerman/.stm32cubemx/encoder_output/encoder_config.h        
+/Users/williamzimmerman/.stm32cubemx/encoder_output/encoder.h               
+/Users/williamzimmerman/.stm32cubemx/encoder_output/encoder.c               
