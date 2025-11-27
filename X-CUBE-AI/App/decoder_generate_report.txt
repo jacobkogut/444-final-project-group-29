@@ -1,6 +1,6 @@
 ST Edge AI Core v2.2.0-20266 2adc00962
-Created date          : 2025-11-27 01:23:51
-Parameters            : generate --target stm32l4 --name decoder -m /Users/williamzimmerman/decoder_fixed.onnx --compression none --verbosity 1 --workspace /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace176313196942927839537689079803125 --output /Users/williamzimmerman/.stm32cubemx/decoder_output
+Created date          : 2025-11-27 13:17:55
+Parameters            : generate --target stm32l4 --name decoder -m /Users/williamzimmerman/decoder_fixed.onnx --compression none --verbosity 1 --workspace /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace281545532989165910127860013116636 --output /Users/williamzimmerman/.stm32cubemx/decoder_output
 
 Exec/report summary (generate)
 --------------------------------------------------------------------------------------------------------------------------
@@ -11,7 +11,7 @@ compression        :   none
 options            :   allocate-inputs, allocate-outputs                                                                  
 optimization       :   balanced                                                                                           
 target/series      :   stm32l4                                                                                            
-workspace dir      :   /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace176313196942927839537689079803125   
+workspace dir      :   /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace281545532989165910127860013116636   
 output dir         :   /Users/williamzimmerman/.stm32cubemx/decoder_output                                                
 model_fmt          :   float                                                                                              
 model_name         :   decoder_fixed                                                                                      

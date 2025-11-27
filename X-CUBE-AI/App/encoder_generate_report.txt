@@ -1,6 +1,6 @@
 ST Edge AI Core v2.2.0-20266 2adc00962
-Created date          : 2025-11-27 01:23:38
-Parameters            : generate --target stm32l4 --name encoder -m /Users/williamzimmerman/encoder_fixed.onnx --compression none --verbosity 1 --workspace /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace176118903157093440073015061748674 --output /Users/williamzimmerman/.stm32cubemx/encoder_output
+Created date          : 2025-11-27 13:17:42
+Parameters            : generate --target stm32l4 --name encoder -m /Users/williamzimmerman/encoder_fixed.onnx --compression none --verbosity 1 --workspace /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace281371138680836073559315836248904 --output /Users/williamzimmerman/.stm32cubemx/encoder_output
 
 Exec/report summary (generate)
 --------------------------------------------------------------------------------------------------------------------------
@@ -11,7 +11,7 @@ compression        :   none
 options            :   allocate-inputs, allocate-outputs                                                                  
 optimization       :   balanced                                                                                           
 target/series      :   stm32l4                                                                                            
-workspace dir      :   /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace176118903157093440073015061748674   
+workspace dir      :   /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace281371138680836073559315836248904   
 output dir         :   /Users/williamzimmerman/.stm32cubemx/encoder_output                                                
 model_fmt          :   float                                                                                              
 model_name         :   encoder_fixed                                                                                      

@@ -35,6 +35,8 @@ static AI_ALIGNED(4) ai_float mulaw_buffer[512];
 static AI_ALIGNED(4) ai_u8 activations_enc[AI_ENCODER_DATA_ACTIVATIONS_SIZE];
 static AI_ALIGNED(4) ai_u8 activations_dec[AI_DECODER_DATA_ACTIVATIONS_SIZE];
 
+static float codebook_norms_sq[512];
+
 
 void VQ_Init(void) {
     ai_error err;
@@ -52,28 +54,59 @@ void VQ_Init(void) {
     if (err.type != AI_ERROR_NONE) {
         while(1); // Trap error
     }
+
+    for(int c = 0; c < 512; c++) {
+            const float* pVecB = &CODEBOOK[c * 32];
+
+            // arm_power_f32 computes the sum of squares: ||B||^2 = sum(B_i^2)
+            arm_power_f32(
+                pVecB,     // Input vector B
+                32,        // Block size (32 elements)
+                &codebook_norms_sq[c] // Output: ||B||^2
+            );
+        }
 }
 
 // =====================================================================
 //                 SIMD VQ Search and Lookup Helpers
 // =====================================================================
 
-// Helper 1: SIMD-Optimized Nearest Neighbor Search (Used in Tx_Process)
 static void VQ_Find_Indices_Optimized(float* latent_in, uint16_t* indices_out) {
+    // 64 is the number of time steps (vectors) to process
     for (int t = 0; t < 64; t++) {
         int best_idx = 0;
-        float min_dist = FLT_MAX;
+        float min_dist_sq = FLT_MAX; // Working with squared distance
+
+        // 1. Calculate ||A||^2 (Norm of Latent Vector) using SIMD
+        float latent_norm_sq = 0.0f;
         const float* pVecA = &latent_in[t*32];
 
+        // arm_power_f32 computes ||A||^2 = sum(A_i^2)
+        arm_power_f32(pVecA, 32, &latent_norm_sq);
+
+        // 2. Search using the Dot Product Identity
         for (int c = 0; c < 512; c++) {
-            float dist = 0.0f;
+            float dot_product = 0.0f;
             const float* pVecB = &CODEBOOK[c*32];
 
-            // ✅ SIMD CALL
-            arm_sqrdiff_f32(pVecA, pVecB, 32, &dist);
+            // 🌟 STEP 2A: Calculate A * B using SIMD 🌟
+            // arm_dot_prod_f32 is heavily optimized for the M4 DSP
+            arm_dot_prod_f32(
+                pVecA,          // Input Vector A
+                pVecB,          // Codebook Vector B
+                32,             // Block size
+                &dot_product    // Output: A • B
+            );
 
-            if (dist < min_dist) {
-                min_dist = dist;
+            // 3. STEP 2B: Calculate the final squared distance
+            // ||A - B||^2 = ||A||^2 + ||B||^2 - 2(A • B)
+            float current_dist_sq = latent_norm_sq
+                                  + codebook_norms_sq[c]
+                                  - 2.0f * dot_product;
+
+            // Note: Since all terms are positive, we don't need to take the sqrt.
+            if (current_dist_sq < min_dist_sq) {
+                min_dist_sq = current_dist_sq;
                 best_idx = c;
             }
         }
