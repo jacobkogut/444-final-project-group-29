@@ -66,8 +66,7 @@ TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
-int32_t raw_mic_sample_buff1[N_MIC_SAMPLES];
-int32_t raw_mic_sample_buff2[N_MIC_SAMPLES];
+int32_t raw_mic_sample_buff[N_MIC_SAMPLES];
 float send_mic_sample_buff[N_MIC_SAMPLES];
 float decompressed_audio_buff[N_MIC_SAMPLES];
 uint16_t play_audio_buff[N_MIC_SAMPLES];
@@ -76,7 +75,6 @@ uint16_t recv_mic_sample_buff2[N_INDICES];
 uint16_t compressed_indices[N_INDICES]; // 128 bytes of compressed data
 
 
-int curr_unused_raw_buff = 0;
 int curr_unused_recv_buff = 0;
 int ready_to_send_full_buff = 0;
 int recv_buff_size1 = 0;
@@ -598,13 +596,7 @@ static void MX_GPIO_Init(void)
 void btn_isr(){
 	if(state == STANDBY){
 		HAL_DFSDM_FilterRegularStop_DMA(&hdfsdm1_filter0);
-		if(curr_unused_raw_buff){
-			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff2, N_MIC_SAMPLES);
-			curr_unused_raw_buff = 0;
-		} else {
-			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1, N_MIC_SAMPLES);
-			curr_unused_raw_buff = 1;
-		}
+		HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff, N_MIC_SAMPLES);
 	} else {
 		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
 	}
@@ -621,26 +613,18 @@ void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef* hdfsdm_filt
 	if(ready_to_send_full_buff){
 		terminal_print("Failed to send mic samples in time, overwriting\r\n");
 	}
-	ready_to_send_full_buff = 1;
 	HAL_DFSDM_FilterRegularStop_DMA(&hdfsdm1_filter0);
 
 	const uint32_t MAX_DFSDM_VAL = (1 << 23) - 1;
 
 	// change below shift depending on the sensitivity you want in the mic
 	// Ex: 10 better at recording louder sounds, 8 better at recording quieter sounds
-	if(curr_unused_raw_buff){
-		for(int i = 0; i < N_MIC_SAMPLES; ++i){
-			send_mic_sample_buff[i] = (float) raw_mic_sample_buff2[i] / MAX_DFSDM_VAL;
-		}
-		HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff2, N_MIC_SAMPLES);
-		curr_unused_raw_buff = 0;
-	} else {
-		for(int i = 0; i < N_MIC_SAMPLES; ++i){
-			send_mic_sample_buff[i] = (float) raw_mic_sample_buff1[i] / MAX_DFSDM_VAL;
-		}
-		HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1, N_MIC_SAMPLES);
-		curr_unused_raw_buff = 1;
+	for(int i = 0; i < N_MIC_SAMPLES; ++i){
+		send_mic_sample_buff[i] = (float) raw_mic_sample_buff[i] / MAX_DFSDM_VAL;
 	}
+	ready_to_send_full_buff = 1;
+
+	HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff, N_MIC_SAMPLES);
 }
 
 
