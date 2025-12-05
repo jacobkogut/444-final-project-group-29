@@ -224,7 +224,7 @@ int main(void)
 //			  arm_scale_f32(decompressed_audio_buff, 1.0f, decompressed_audio_buff, N_MIC_SAMPLES);
 
 			  HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
-			  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *) recv_buffer, N_MIC_SAMPLES, DAC_ALIGN_12B_R);
+			  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *) play_audio_buff, N_MIC_SAMPLES, DAC_ALIGN_12B_R);
 
 			  curr_unused_recv_buff = !curr_unused_recv_buff;
 		  }
