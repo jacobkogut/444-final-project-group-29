@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    encoder.c
   * @author  AST Embedded Analytics Research Platform
-  * @date    2025-11-27T13:17:40-0500
+  * @date    2025-12-04T20:12:41-0500
   * @brief   AI Tool Automatic Code Generator for Embedded NN computing
   ******************************************************************************
   * @attention
@@ -42,7 +42,7 @@
 #endif
 
 #undef AI_TOOLS_DATE_TIME
-#define AI_TOOLS_DATE_TIME   "2025-11-27T13:17:40-0500"
+#define AI_TOOLS_DATE_TIME   "2025-12-04T20:12:41-0500"
 
 #undef AI_TOOLS_COMPILE_TIME
 #define AI_TOOLS_COMPILE_TIME    __DATE__ " " __TIME__
@@ -782,7 +782,7 @@ AI_NETWORK_OBJ_DECLARE(
     98560, NULL, NULL),
   AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_ENCODER_IN_NUM, &input_output),
   AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_ENCODER_OUT_NUM, &latent_Transpose_0_output),
-  &conv2d_layer, 0x994a5288, NULL)
+  &conv2d_layer, 0xd7ef9ccc, NULL)
 
 #else
 
@@ -802,7 +802,7 @@ AI_NETWORK_OBJ_DECLARE(
   ),
   AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_ENCODER_IN_NUM, &input_output),
   AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_ENCODER_OUT_NUM, &latent_Transpose_0_output),
-  &conv2d_layer, 0x994a5288, NULL)
+  &conv2d_layer, 0xd7ef9ccc, NULL)
 
 #endif	/*(AI_TOOLS_API_VERSION < AI_TOOLS_API_VERSION_1_5)*/
 
@@ -818,50 +818,50 @@ ai_bool encoder_configure_activations(
   if (ai_platform_get_activations_map(g_encoder_activations_map, 1, params)) {
     /* Updating activations (byte) offsets */
     
-    input_output_array.data = AI_PTR(g_encoder_activations_map[0] + 30832);
-    input_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 30832);
-    conv2d_scratch0_array.data = AI_PTR(g_encoder_activations_map[0] + 32880);
-    conv2d_scratch0_array.data_start = AI_PTR(g_encoder_activations_map[0] + 32880);
+    input_output_array.data = AI_PTR(g_encoder_activations_map[0] + 65664);
+    input_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 65664);
+    conv2d_scratch0_array.data = AI_PTR(g_encoder_activations_map[0] + 67712);
+    conv2d_scratch0_array.data_start = AI_PTR(g_encoder_activations_map[0] + 67712);
     conv2d_output_array.data = AI_PTR(g_encoder_activations_map[0] + 32896);
     conv2d_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 32896);
     relu_output_array.data = AI_PTR(g_encoder_activations_map[0] + 32896);
     relu_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 32896);
-    conv2d_1_scratch0_array.data = AI_PTR(g_encoder_activations_map[0] + 65664);
-    conv2d_1_scratch0_array.data_start = AI_PTR(g_encoder_activations_map[0] + 65664);
-    conv2d_1_output_array.data = AI_PTR(g_encoder_activations_map[0] + 128);
-    conv2d_1_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 128);
-    relu_1_output_array.data = AI_PTR(g_encoder_activations_map[0] + 128);
-    relu_1_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 128);
-    conv2d_2_scratch0_array.data = AI_PTR(g_encoder_activations_map[0] + 0);
-    conv2d_2_scratch0_array.data_start = AI_PTR(g_encoder_activations_map[0] + 0);
-    conv2d_2_output_array.data = AI_PTR(g_encoder_activations_map[0] + 65664);
-    conv2d_2_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 65664);
+    conv2d_1_scratch0_array.data = AI_PTR(g_encoder_activations_map[0] + 32512);
+    conv2d_1_scratch0_array.data_start = AI_PTR(g_encoder_activations_map[0] + 32512);
+    conv2d_1_output_array.data = AI_PTR(g_encoder_activations_map[0] + 65664);
+    conv2d_1_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 65664);
+    relu_1_output_array.data = AI_PTR(g_encoder_activations_map[0] + 65664);
+    relu_1_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 65664);
+    conv2d_2_scratch0_array.data = AI_PTR(g_encoder_activations_map[0] + 98432);
+    conv2d_2_scratch0_array.data_start = AI_PTR(g_encoder_activations_map[0] + 98432);
+    conv2d_2_output_array.data = AI_PTR(g_encoder_activations_map[0] + 128);
+    conv2d_2_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 128);
     add_output_array.data = AI_PTR(g_encoder_activations_map[0] + 32896);
     add_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 32896);
-    conv2d_3_scratch0_array.data = AI_PTR(g_encoder_activations_map[0] + 97920);
-    conv2d_3_scratch0_array.data_start = AI_PTR(g_encoder_activations_map[0] + 97920);
-    conv2d_3_output_array.data = AI_PTR(g_encoder_activations_map[0] + 0);
-    conv2d_3_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 0);
-    relu_2_output_array.data = AI_PTR(g_encoder_activations_map[0] + 32768);
-    relu_2_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 32768);
-    conv2d_4_scratch0_array.data = AI_PTR(g_encoder_activations_map[0] + 0);
-    conv2d_4_scratch0_array.data_start = AI_PTR(g_encoder_activations_map[0] + 0);
-    conv2d_4_output_array.data = AI_PTR(g_encoder_activations_map[0] + 65664);
-    conv2d_4_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 65664);
-    relu_3_output_array.data = AI_PTR(g_encoder_activations_map[0] + 0);
-    relu_3_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 0);
-    conv2d_5_scratch0_array.data = AI_PTR(g_encoder_activations_map[0] + 65536);
-    conv2d_5_scratch0_array.data_start = AI_PTR(g_encoder_activations_map[0] + 65536);
-    conv2d_5_output_array.data = AI_PTR(g_encoder_activations_map[0] + 65792);
-    conv2d_5_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 65792);
-    add_1_output_array.data = AI_PTR(g_encoder_activations_map[0] + 0);
-    add_1_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 0);
-    latent_scratch0_array.data = AI_PTR(g_encoder_activations_map[0] + 32768);
-    latent_scratch0_array.data_start = AI_PTR(g_encoder_activations_map[0] + 32768);
-    latent_output_array.data = AI_PTR(g_encoder_activations_map[0] + 33792);
-    latent_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 33792);
-    latent_Transpose_0_output_array.data = AI_PTR(g_encoder_activations_map[0] + 0);
-    latent_Transpose_0_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 0);
+    conv2d_3_scratch0_array.data = AI_PTR(g_encoder_activations_map[0] + 128);
+    conv2d_3_scratch0_array.data_start = AI_PTR(g_encoder_activations_map[0] + 128);
+    conv2d_3_output_array.data = AI_PTR(g_encoder_activations_map[0] + 65792);
+    conv2d_3_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 65792);
+    relu_2_output_array.data = AI_PTR(g_encoder_activations_map[0] + 33024);
+    relu_2_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 33024);
+    conv2d_4_scratch0_array.data = AI_PTR(g_encoder_activations_map[0] + 97792);
+    conv2d_4_scratch0_array.data_start = AI_PTR(g_encoder_activations_map[0] + 97792);
+    conv2d_4_output_array.data = AI_PTR(g_encoder_activations_map[0] + 128);
+    conv2d_4_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 128);
+    relu_3_output_array.data = AI_PTR(g_encoder_activations_map[0] + 65792);
+    relu_3_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 65792);
+    conv2d_5_scratch0_array.data = AI_PTR(g_encoder_activations_map[0] + 32768);
+    conv2d_5_scratch0_array.data_start = AI_PTR(g_encoder_activations_map[0] + 32768);
+    conv2d_5_output_array.data = AI_PTR(g_encoder_activations_map[0] + 0);
+    conv2d_5_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 0);
+    add_1_output_array.data = AI_PTR(g_encoder_activations_map[0] + 65792);
+    add_1_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 65792);
+    latent_scratch0_array.data = AI_PTR(g_encoder_activations_map[0] + 0);
+    latent_scratch0_array.data_start = AI_PTR(g_encoder_activations_map[0] + 0);
+    latent_output_array.data = AI_PTR(g_encoder_activations_map[0] + 1024);
+    latent_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 1024);
+    latent_Transpose_0_output_array.data = AI_PTR(g_encoder_activations_map[0] + 9216);
+    latent_Transpose_0_output_array.data_start = AI_PTR(g_encoder_activations_map[0] + 9216);
     return true;
   }
   AI_ERROR_TRAP(net_ctx, INIT_FAILED, NETWORK_ACTIVATIONS);
@@ -969,7 +969,7 @@ ai_bool ai_encoder_get_info(
       .params            = AI_STRUCT_INIT,
       .activations       = AI_STRUCT_INIT,
       .n_nodes           = 0,
-      .signature         = 0x994a5288,
+      .signature         = 0xd7ef9ccc,
     };
 
     if (!ai_platform_api_get_network_report(network, &r)) return false;
@@ -1017,7 +1017,7 @@ ai_bool ai_encoder_get_report(
       .map_weights       = AI_STRUCT_INIT,
       .map_activations   = AI_STRUCT_INIT,
       .n_nodes           = 0,
-      .signature         = 0x994a5288,
+      .signature         = 0xd7ef9ccc,
     };
 
     if (!ai_platform_api_get_network_report(network, &r)) return false;

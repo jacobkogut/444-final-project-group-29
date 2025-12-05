@@ -1243,44 +1243,44 @@
   ],
   "environment": {
     "generated_model": {
-      "generated_time": "2025-11-27T13:17:54-0500",
+      "generated_time": "2025-12-04T20:12:52-0500",
       "model_files": [
         {
           "name": "decoder_data_params.h",
-          "signature": "0x09d237e2556415a2dcafd344886daf68"
+          "signature": "0x3d5e3dfde4145fd0ee0eec45f18907d2"
         },
         {
           "name": "decoder_data_params.c",
-          "signature": "0x0cdb0ca608ba7629e9a71a07d24ecc46"
+          "signature": "0xa1585d6677499ed915ef275d3bc0246f"
         },
         {
           "name": "decoder_data.h",
-          "signature": "0xfec0b5edb98d583eac57ba2bc761d0d4"
+          "signature": "0x0f3543085efc72e980c650876db6f028"
         },
         {
           "name": "decoder_data.c",
-          "signature": "0x2ceaae84b055b64600eb47e777d3eb5a"
+          "signature": "0xfb846caf33dd59494079aa9a1c074b60"
         },
         {
           "name": "decoder_config.h",
-          "signature": "0x6afdcadaf3188e12df72e12f8b6de248"
+          "signature": "0x961c7958b129516f6063eec953f95d43"
         },
         {
           "name": "decoder.h",
-          "signature": "0xc6033e5b0488c20661ed7cc9a3e84ddd"
+          "signature": "0xca0114f62afad54009a898f3f5e2f23e"
         },
         {
           "name": "decoder.c",
-          "signature": "0x84053458caad02f7aa769987e57db3e7"
+          "signature": "0xd179f98847b47b98b77b4796a893b5c5"
         }
       ],
       "name": "decoder"
     },
-    "network_signature": "0x91e59f8d981d8bed",
+    "network_signature": "0x54fad2c3eb6ded74",
     "test_name": "",
     "tools": [
       {
-        "arguments": "generate --target stm32l4 --name decoder -m /Users/williamzimmerman/decoder_fixed.onnx --compression none --verbosity 1 --workspace /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace281545532989165910127860013116636 --output /Users/williamzimmerman/.stm32cubemx/decoder_output",
+        "arguments": "generate --target stm32l4 --name decoder -m D:/School/ECSE444/ecse444_final_project/decoder_fixed.onnx --compression none --verbosity 1 -O time --workspace C:/Users/jake1/AppData/Local/Temp/mxAI_workspace5989035842176004016344890646484874 --output C:/Users/jake1/.stm32cubemx/decoder_output",
         "environment": [
           "STATS_TYPE=X-CUBE-AI"
         ],

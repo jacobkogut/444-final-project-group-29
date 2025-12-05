@@ -1,30 +1,30 @@
 ST Edge AI Core v2.2.0-20266 2adc00962
-Created date          : 2025-11-27 13:17:55
-Parameters            : generate --target stm32l4 --name decoder -m /Users/williamzimmerman/decoder_fixed.onnx --compression none --verbosity 1 --workspace /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace281545532989165910127860013116636 --output /Users/williamzimmerman/.stm32cubemx/decoder_output
+Created date          : 2025-12-04 20:12:53
+Parameters            : generate --target stm32l4 --name decoder -m D:/School/ECSE444/ecse444_final_project/decoder_fixed.onnx --compression none --verbosity 1 -O time --workspace C:/Users/jake1/AppData/Local/Temp/mxAI_workspace5989035842176004016344890646484874 --output C:/Users/jake1/.stm32cubemx/decoder_output
 
 Exec/report summary (generate)
---------------------------------------------------------------------------------------------------------------------------
-model file         :   /Users/williamzimmerman/decoder_fixed.onnx                                                         
-type               :   onnx                                                                                               
-c_name             :   decoder                                                                                            
-compression        :   none                                                                                               
-options            :   allocate-inputs, allocate-outputs                                                                  
-optimization       :   balanced                                                                                           
-target/series      :   stm32l4                                                                                            
-workspace dir      :   /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace281545532989165910127860013116636   
-output dir         :   /Users/williamzimmerman/.stm32cubemx/decoder_output                                                
-model_fmt          :   float                                                                                              
-model_name         :   decoder_fixed                                                                                      
-model_hash         :   0x5b4a5abd892a0876b2ceb826b015a40d                                                                 
-params #           :   37,281 items (145.63 KiB)                                                                          
---------------------------------------------------------------------------------------------------------------------------
-input 1/1          :   'latent', f32(1x32x1x64), 8.00 KBytes, activations                                                 
-output 1/1         :   'audio', f32(1x1x512x1), 2.00 KBytes, activations                                                  
-macc               :   6,412,577                                                                                          
-weights (ro)       :   149,124 B (145.63 KiB) (1 segment)                                                                 
-activations (rw)   :   99,072 B (96.75 KiB) (1 segment) *                                                                 
-ram (total)        :   99,072 B (96.75 KiB) = 99,072 + 0 + 0                                                              
---------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+model file         :   D:\School\ECSE444\ecse444_final_project\decoder_fixed.onnx                           
+type               :   onnx                                                                                 
+c_name             :   decoder                                                                              
+compression        :   none                                                                                 
+options            :   allocate-inputs, allocate-outputs                                                    
+optimization       :   time                                                                                 
+target/series      :   stm32l4                                                                              
+workspace dir      :   C:\Users\jake1\AppData\Local\Temp\mxAI_workspace5989035842176004016344890646484874   
+output dir         :   C:\Users\jake1\.stm32cubemx\decoder_output                                           
+model_fmt          :   float                                                                                
+model_name         :   decoder_fixed                                                                        
+model_hash         :   0x5b4a5abd892a0876b2ceb826b015a40d                                                   
+params #           :   37,281 items (145.63 KiB)                                                            
+------------------------------------------------------------------------------------------------------------
+input 1/1          :   'latent', f32(1x32x1x64), 8.00 KBytes, activations                                   
+output 1/1         :   'audio', f32(1x1x512x1), 2.00 KBytes, activations                                    
+macc               :   6,412,577                                                                            
+weights (ro)       :   149,124 B (145.63 KiB) (1 segment)                                                   
+activations (rw)   :   99,072 B (96.75 KiB) (1 segment) *                                                   
+ram (total)        :   99,072 B (96.75 KiB) = 99,072 + 0 + 0                                                
+------------------------------------------------------------------------------------------------------------
 (*) 'input'/'output' buffers are allocated in the activations buffer
 
 Model name - decoder_fixed
@@ -294,11 +294,11 @@ macc=6,412,577 weights=149,124 act=99,072 ram_io=0
 
 
 Generated files (7)
---------------------------------------------------------------------------- 
-/Users/williamzimmerman/.stm32cubemx/decoder_output/decoder_data_params.h   
-/Users/williamzimmerman/.stm32cubemx/decoder_output/decoder_data_params.c   
-/Users/williamzimmerman/.stm32cubemx/decoder_output/decoder_data.h          
-/Users/williamzimmerman/.stm32cubemx/decoder_output/decoder_data.c          
-/Users/williamzimmerman/.stm32cubemx/decoder_output/decoder_config.h        
-/Users/williamzimmerman/.stm32cubemx/decoder_output/decoder.h               
-/Users/williamzimmerman/.stm32cubemx/decoder_output/decoder.c               
+------------------------------------------------------------------ 
+C:\Users\jake1\.stm32cubemx\decoder_output\decoder_data_params.h   
+C:\Users\jake1\.stm32cubemx\decoder_output\decoder_data_params.c   
+C:\Users\jake1\.stm32cubemx\decoder_output\decoder_data.h          
+C:\Users\jake1\.stm32cubemx\decoder_output\decoder_data.c          
+C:\Users\jake1\.stm32cubemx\decoder_output\decoder_config.h        
+C:\Users\jake1\.stm32cubemx\decoder_output\decoder.h               
+C:\Users\jake1\.stm32cubemx\decoder_output\decoder.c               

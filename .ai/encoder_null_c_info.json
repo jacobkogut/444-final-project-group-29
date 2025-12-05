@@ -1119,44 +1119,44 @@
   ],
   "environment": {
     "generated_model": {
-      "generated_time": "2025-12-04T19:53:26-0500",
+      "generated_time": "2025-12-04T20:12:41-0500",
       "model_files": [
         {
           "name": "encoder_data_params.h",
-          "signature": "0xfd363eff613e4fffe176b8f3029c4939"
+          "signature": "0xcfed2bcc386ffc4ecd2e88c59a89489e"
         },
         {
           "name": "encoder_data_params.c",
-          "signature": "0x768f874e11dbae627fe1ae204fd19651"
+          "signature": "0xedd4752f5c9199bd76f6b7183a0a9ebd"
         },
         {
           "name": "encoder_data.h",
-          "signature": "0x350720922f3becebaff46d50a8c31ab6"
+          "signature": "0x0452942b69c53b2df06b5bb2bf8acb0f"
         },
         {
           "name": "encoder_data.c",
-          "signature": "0x533e44e42270e8f6b8c29126ec6217a9"
+          "signature": "0xe2fd7b815e7fd2977e6e3a19d02992e4"
         },
         {
           "name": "encoder_config.h",
-          "signature": "0x688ef1535971bee9675a115c2b017d29"
+          "signature": "0xfc0f9831aa87219b27e8c65c0e4885c5"
         },
         {
           "name": "encoder.h",
-          "signature": "0xcb58c4c305ec6445aed5c708f2ded177"
+          "signature": "0x5678937e71f1e82f4e6bbe687d4ec767"
         },
         {
           "name": "encoder.c",
-          "signature": "0xebcb21f03feee27bfa3c8385d7b3a71d"
+          "signature": "0xc8e85ebd8cc18e6a61a89164ba9458e9"
         }
       ],
       "name": "encoder"
     },
-    "network_signature": "0x2e6039ec84588f20",
+    "network_signature": "0xd7ef9ccc12c3b8e0",
     "test_name": "",
     "tools": [
       {
-        "arguments": "generate --target stm32l4 --name encoder -m D:/School/ECSE444/ecse444_final_project/encoder_fixed.onnx --compression none --verbosity 1 -O time --workspace C:/Users/jake1/AppData/Local/Temp/mxAI_workspace59773390511270012466706198388118312 --output C:/Users/jake1/.stm32cubemx/encoder_output",
+        "arguments": "generate --target stm32l4 --name encoder -m D:/School/ECSE444/ecse444_final_project/encoder_fixed.onnx --compression none --verbosity 1 -O time --workspace C:/Users/jake1/AppData/Local/Temp/mxAI_workspace59888811711950015104076657381805366 --output C:/Users/jake1/.stm32cubemx/encoder_output",
         "environment": [
           "STATS_TYPE=X-CUBE-AI"
         ],

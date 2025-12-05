@@ -9,13 +9,13 @@ TARGET_PORT = 90
 RECV_IP = "0.0.0.0"
 RECV_PORT = 4000
 
-BUFFER_SIZE = 1200
+BUFFER_SIZE = 128
 
 # Target rate
-TARGET_BITRATE = 320_000              # bits per second
+TARGET_BITRATE = 20_000  # bits per second
 BYTES_PER_PACKET = BUFFER_SIZE
 PACKETS_PER_SEC = TARGET_BITRATE / 8 / BYTES_PER_PACKET
-SECONDS_PER_PACKET = 1.0 / PACKETS_PER_SEC   # ~0.03 sec
+SECONDS_PER_PACKET = 1.0 / PACKETS_PER_SEC  # ~0.03 sec
 
 
 def input_thread(send_event):
@@ -46,7 +46,7 @@ def main():
     try:
         while True:
             try:
-                data, _ = recv_sock.recvfrom(1500)
+                data, _ = recv_sock.recvfrom(BUFFER_SIZE)
                 buffer.extend(data)
             except socket.timeout:
                 pass
@@ -58,7 +58,9 @@ def main():
             if send_event.is_set():
                 send_event.clear()
 
-                print(f"Sending {len(completed_buffers)} buffers at exactly 320 kbps...")
+                print(
+                    f"Sending {len(completed_buffers)} buffers at exactly 320 kbps..."
+                )
 
                 next_send_time = time.perf_counter()
 

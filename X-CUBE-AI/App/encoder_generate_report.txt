@@ -1,30 +1,30 @@
 ST Edge AI Core v2.2.0-20266 2adc00962
-Created date          : 2025-11-27 13:17:42
-Parameters            : generate --target stm32l4 --name encoder -m /Users/williamzimmerman/encoder_fixed.onnx --compression none --verbosity 1 --workspace /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace281371138680836073559315836248904 --output /Users/williamzimmerman/.stm32cubemx/encoder_output
+Created date          : 2025-12-04 20:12:42
+Parameters            : generate --target stm32l4 --name encoder -m D:/School/ECSE444/ecse444_final_project/encoder_fixed.onnx --compression none --verbosity 1 -O time --workspace C:/Users/jake1/AppData/Local/Temp/mxAI_workspace59888811711950015104076657381805366 --output C:/Users/jake1/.stm32cubemx/encoder_output
 
 Exec/report summary (generate)
---------------------------------------------------------------------------------------------------------------------------
-model file         :   /Users/williamzimmerman/encoder_fixed.onnx                                                         
-type               :   onnx                                                                                               
-c_name             :   encoder                                                                                            
-compression        :   none                                                                                               
-options            :   allocate-inputs, allocate-outputs                                                                  
-optimization       :   balanced                                                                                           
-target/series      :   stm32l4                                                                                            
-workspace dir      :   /var/folders/kk/2wz4vmzd2yb6zbnv7wtltjcm0000gn/T/mxAI_workspace281371138680836073559315836248904   
-output dir         :   /Users/williamzimmerman/.stm32cubemx/encoder_output                                                
-model_fmt          :   float                                                                                              
-model_name         :   encoder_fixed                                                                                      
-model_hash         :   0x267d2af1d26e3e4a31ae191a16d32221                                                                 
-params #           :   37,312 items (145.75 KiB)                                                                          
---------------------------------------------------------------------------------------------------------------------------
-input 1/1          :   'input', f32(1x1x512x1), 2.00 KBytes, activations                                                  
-output 1/1         :   'latent_Transpose_0', f32(1x32x1x64), 8.00 KBytes, activations                                     
-macc               :   4,801,856                                                                                          
-weights (ro)       :   149,248 B (145.75 KiB) (1 segment)                                                                 
-activations (rw)   :   98,560 B (96.25 KiB) (1 segment) *                                                                 
-ram (total)        :   98,560 B (96.25 KiB) = 98,560 + 0 + 0                                                              
---------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------
+model file         :   D:\School\ECSE444\ecse444_final_project\encoder_fixed.onnx                            
+type               :   onnx                                                                                  
+c_name             :   encoder                                                                               
+compression        :   none                                                                                  
+options            :   allocate-inputs, allocate-outputs                                                     
+optimization       :   time                                                                                  
+target/series      :   stm32l4                                                                               
+workspace dir      :   C:\Users\jake1\AppData\Local\Temp\mxAI_workspace59888811711950015104076657381805366   
+output dir         :   C:\Users\jake1\.stm32cubemx\encoder_output                                            
+model_fmt          :   float                                                                                 
+model_name         :   encoder_fixed                                                                         
+model_hash         :   0x267d2af1d26e3e4a31ae191a16d32221                                                    
+params #           :   37,312 items (145.75 KiB)                                                             
+-------------------------------------------------------------------------------------------------------------
+input 1/1          :   'input', f32(1x1x512x1), 2.00 KBytes, activations                                     
+output 1/1         :   'latent_Transpose_0', f32(1x32x1x64), 8.00 KBytes, activations                        
+macc               :   4,801,856                                                                             
+weights (ro)       :   149,248 B (145.75 KiB) (1 segment)                                                    
+activations (rw)   :   98,560 B (96.25 KiB) (1 segment) *                                                    
+ram (total)        :   98,560 B (96.25 KiB) = 98,560 + 0 + 0                                                 
+-------------------------------------------------------------------------------------------------------------
 (*) 'input'/'output' buffers are allocated in the activations buffer
 
 Model name - encoder_fixed
@@ -244,17 +244,17 @@ macc=4,801,856 weights=149,248 act=98,560 ram_io=0
  module                            text    rodata    data      bss 
  ------------------------------ ------- --------- ------- -------- 
  NetworkRuntime1020_CM4_GCC.a     7,620         0       0        0 
- encoder.o                          932       112   4,704      200 
+ encoder.o                          940       112   4,704      200 
  encoder_data.o                      48        16      88        0 
  lib (toolchain)*                     0         0       0        0 
  ------------------------------ ------- --------- ------- -------- 
- RT total**                       8,600       128   4,792      200 
+ RT total**                       8,608       128   4,792      200 
  ------------------------------ ------- --------- ------- -------- 
  weights                              0   149,248       0        0 
  activations                          0         0       0   98,560 
  io                                   0         0       0        0 
  ------------------------------ ------- --------- ------- -------- 
- TOTAL                            8,600   149,376   4,792   98,760 
+ TOTAL                            8,608   149,376   4,792   98,760 
  ------------------------------ ------- --------- ------- -------- 
  *  toolchain objects (libm/libgcc*)
  ** RT AI runtime objects (kernels+infrastructure)
@@ -263,19 +263,19 @@ macc=4,801,856 weights=149,248 act=98,560 ram_io=0
   -------------------------------------------------
                FLASH (ro)     %*   RAM (rw)      % 
   -------------------------------------------------
-  RT total         13,520   8.3%      4,992   4.8% 
+  RT total         13,528   8.3%      4,992   4.8% 
   -------------------------------------------------
-  TOTAL           162,768           103,552        
+  TOTAL           162,776           103,552        
   -------------------------------------------------
   *  rt/total
 
 
 Generated files (7)
---------------------------------------------------------------------------- 
-/Users/williamzimmerman/.stm32cubemx/encoder_output/encoder_data_params.h   
-/Users/williamzimmerman/.stm32cubemx/encoder_output/encoder_data_params.c   
-/Users/williamzimmerman/.stm32cubemx/encoder_output/encoder_data.h          
-/Users/williamzimmerman/.stm32cubemx/encoder_output/encoder_data.c          
-/Users/williamzimmerman/.stm32cubemx/encoder_output/encoder_config.h        
-/Users/williamzimmerman/.stm32cubemx/encoder_output/encoder.h               
-/Users/williamzimmerman/.stm32cubemx/encoder_output/encoder.c               
+------------------------------------------------------------------ 
+C:\Users\jake1\.stm32cubemx\encoder_output\encoder_data_params.h   
+C:\Users\jake1\.stm32cubemx\encoder_output\encoder_data_params.c   
+C:\Users\jake1\.stm32cubemx\encoder_output\encoder_data.h          
+C:\Users\jake1\.stm32cubemx\encoder_output\encoder_data.c          
+C:\Users\jake1\.stm32cubemx\encoder_output\encoder_config.h        
+C:\Users\jake1\.stm32cubemx\encoder_output\encoder.h               
+C:\Users\jake1\.stm32cubemx\encoder_output\encoder.c               

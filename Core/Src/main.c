@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
- ******************************************************************************
- * @file           : main.c
- * @brief          : Main program body
- ******************************************************************************
- * @attention
- *
- * Copyright (c) 2025 STMicroelectronics.
- * All rights reserved.
- *
- * This software is licensed under terms that can be found in the LICENSE file
- * in the root directory of this software component.
- * If no LICENSE file comes with this software, it is provided AS-IS.
- *
- ******************************************************************************
- */
+  ******************************************************************************
+  * @file           : main.c
+  * @brief          : Main program body
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2025 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
+  ******************************************************************************
+  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -30,7 +30,8 @@
 /* USER CODE BEGIN PTD */
 
 enum {
-	SEND, STANDBY
+	SEND,
+	STANDBY
 } state = STANDBY;
 
 /* USER CODE END PTD */
@@ -44,10 +45,11 @@ enum {
 /* USER CODE BEGIN PM */
 
 #define N_MIC_SAMPLES 512
+#define N_INDICES 64
 #define RECV_SOCK 1
 #define SEND_SOCK 0
-#define FRAME_SIZE 512
-#define NUM_INDICES 64
+#define ITM_Port32(n) (*((volatile unsigned long *) (0xE0000000+4*n)))
+
 
 /* USER CODE END PM */
 
@@ -66,15 +68,13 @@ UART_HandleTypeDef huart1;
 /* USER CODE BEGIN PV */
 int32_t raw_mic_sample_buff1[N_MIC_SAMPLES];
 int32_t raw_mic_sample_buff2[N_MIC_SAMPLES];
-int16_t send_mic_sample_buff[N_MIC_SAMPLES];
-uint16_t recv_mic_sample_buff1[N_MIC_SAMPLES];
-uint16_t recv_mic_sample_buff2[N_MIC_SAMPLES];
+float send_mic_sample_buff[N_MIC_SAMPLES];
+float decompressed_audio_buff[N_MIC_SAMPLES];
+uint16_t play_audio_buff[N_MIC_SAMPLES];
+uint16_t recv_mic_sample_buff1[N_INDICES];
+uint16_t recv_mic_sample_buff2[N_INDICES];
+uint16_t compressed_indices[N_INDICES]; // 128 bytes of compressed data
 
-float raw_mic_float_buff[FRAME_SIZE]; // VAE input (float)
-float decoded_audio_float_buff[FRAME_SIZE]; // VAE output (float)
-
-// VAE intermediate buffers
-uint16_t compressed_indices[NUM_INDICES]; // 128 bytes of compressed data
 
 int curr_unused_raw_buff = 0;
 int curr_unused_recv_buff = 0;
@@ -82,7 +82,7 @@ int ready_to_send_full_buff = 0;
 int recv_buff_size1 = 0;
 int recv_buff_size2 = 0;
 int switch_states = 0;
-volatile int packet_available = 0;
+
 
 /* USER CODE END PV */
 
@@ -95,7 +95,7 @@ static void MX_DFSDM1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_DAC1_Init(void);
 /* USER CODE BEGIN PFP */
-void terminal_print(const char *msg);
+void terminal_print(const char* msg);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -138,185 +138,135 @@ int main(void)
   MX_TIM2_Init();
   MX_DAC1_Init();
   /* USER CODE BEGIN 2 */
-	if (WIFI_Init() != WIFI_STATUS_OK) {
-		Error_Handler();
-	}
 
-	while (WIFI_Connect("BELL851", "F5433C661562", WIFI_ECN_WPA2_PSK)
-			!= WIFI_STATUS_OK) {
-		terminal_print("Connection attempt failed, retrying\r\n");
-	}
+  VQ_Init();
 
-	terminal_print("Connection succeeded\r\n");
+  if(WIFI_Init() != WIFI_STATUS_OK){
+	  Error_Handler();
+  }
 
-	HAL_TIM_Base_Start(&htim2);
 
-	if (WIFI_StartServer(RECV_SOCK, WIFI_UDP_PROTOCOL, 0, "recv_server", 90)
-			!= WIFI_STATUS_OK) {
-		Error_Handler();
-	}
+  while(WIFI_Connect("BELL851", "F5433C661562", WIFI_ECN_WPA2_PSK) != WIFI_STATUS_OK){
+	  terminal_print("Connection attempt failed, retrying\r\n");
+  }
 
-	uint8_t ip_addr[] = { 192, 168, 2, 17 };
+  terminal_print("Connection succeeded\r\n");
 
-	VQ_Init();
+  HAL_TIM_Base_Start(&htim2);
 
-	memset(recv_mic_sample_buff1, 0, sizeof(recv_mic_sample_buff1));
 
-	//HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1, N_MIC_SAMPLES);
+  if(WIFI_StartServer(RECV_SOCK, WIFI_UDP_PROTOCOL, 0, "recv_server", 90) != WIFI_STATUS_OK){
+	  Error_Handler();
+  }
 
-	// 3. Initialize DAC with a default buffer to prevent DMA faults
-	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *)recv_mic_sample_buff1, N_MIC_SAMPLES, DAC_ALIGN_12B_R);
+  uint8_t ip_addr[] = {192, 168, 2, 21};
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	while (1) {
+  while (1)
+  {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
 
-		switch (state) {
-		case STANDBY:
-			if (switch_states) {
-				switch_states = 0;
-				state = SEND;
+	  switch(state){
+	  case STANDBY:
+		  if(switch_states){
+			  switch_states = 0;
+			  state = SEND;
 
-				if (WIFI_StopServer(RECV_SOCK) != WIFI_STATUS_OK) {
-					Error_Handler();
-				}
+			  if(WIFI_StopServer(RECV_SOCK) != WIFI_STATUS_OK){
+				  Error_Handler();
+			  }
 
-				if (WIFI_OpenClientConnection(SEND_SOCK, WIFI_UDP_PROTOCOL,
-						"send_client", ip_addr, 4000, 80) != WIFI_STATUS_OK) {
-					Error_Handler();
-				}
-				terminal_print("state switch \r\n");
-				HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1, N_MIC_SAMPLES);
 
-				continue;
+			  if(WIFI_OpenClientConnection(SEND_SOCK, WIFI_UDP_PROTOCOL, "send_client", ip_addr, 4000, 80) != WIFI_STATUS_OK){
+				  Error_Handler();
+			  }
 
-			}
+			  continue;
 
-			uint16_t bytes_received = 0;
-			uint16_t *recv_indices_buffer = (uint16_t *)(curr_unused_recv_buff ? recv_mic_sample_buff2 : recv_mic_sample_buff1);
+		  }
 
-			int16_t *recv_buffer =
-					curr_unused_recv_buff ?
-							recv_mic_sample_buff2 : recv_mic_sample_buff1;
-			int *recv_buff_size =
-					curr_unused_recv_buff ? &recv_buff_size2 : &recv_buff_size1;
-			recv_buffer += *recv_buff_size;
+		  uint16_t bytes_received = 0;
 
-			if (WIFI_ReceiveData(RECV_SOCK, (uint8_t*) recv_buffer,
-					NUM_INDICES * 2, &bytes_received, 0) != WIFI_STATUS_OK) {
-				terminal_print("Failed to receive\r\n");
-			}
+		  uint16_t *recv_buffer = curr_unused_recv_buff ? recv_mic_sample_buff2 : recv_mic_sample_buff1;
+		  int* recv_buff_size = curr_unused_recv_buff ? &recv_buff_size2 : &recv_buff_size1;
 
-			if (bytes_received <= 0) {
-				terminal_print("0 byte \r\n");
-				continue;
-			}
-			// VAE_DECODE START
+		  if(WIFI_ReceiveData(RECV_SOCK, (uint8_t *) (recv_buffer + *recv_buff_size), N_INDICES*2, &bytes_received, 0) != WIFI_STATUS_OK){
+			  terminal_print("Failed to receive\r\n");
+		  }
 
-			// 1. Decode VAE: Indices -> Linear Float Audio
-			// The received data are the compressed indices (64 indices)
-			terminal_print("Rx start \r\n");
-			Rx_Process(recv_indices_buffer, decoded_audio_float_buff);
-			terminal_print("Rx end \r\n");
-			bytes_received =0;
+		  if(bytes_received <= 0){
+			  continue;
+		  }
 
-			// 2. Scale and Convert Float -> DAC Integer (4095 for 12-bit DAC)
-			const float DAC_MAX_VAL = 4095.0f; // For DAC_ALIGN_12B_R (0 to 4095)
+//		  for(int i = 0; i < bytes_received / 2; ++i){
+//			  recv_buffer[i] = (recv_buffer[i] >> 4) + 2048;
+//		  }
 
-			for (int i = 0; i < FRAME_SIZE; ++i) {
-				// Convert float [-1, 1] to DAC 12-bit aligned [0, 4095]
-				// Formula: (x * 0.5 + 0.5) * 4095
-				float output_val = (decoded_audio_float_buff[i] * 0.5f + 0.5f)
-						* DAC_MAX_VAL;
+//		  arm_shift_q15(recv_buffer, -4, recv_buffer, bytes_received / 2);
+//		  arm_offset_q15(recv_buffer, 0x800, recv_buffer, bytes_received / 2);
 
-				// Store in the existing DAC buffer (recv_mic_sample_buff1/2)
-				recv_indices_buffer[i] = (uint16_t) output_val;
-			}
 
-			// VAE_DECODE END
+		  *recv_buff_size += bytes_received / 2;
 
-			//		  for(int i = 0; i < bytes_received / 2; ++i){
-			//			  recv_buffer[i] = (recv_buffer[i] >> 4) + 2048;
-			//		  }
+		  if(*recv_buff_size >= N_INDICES){
+			  *recv_buff_size = 0;
 
-			arm_shift_q15(recv_buffer, -4, recv_buffer, bytes_received / 2);
-			arm_offset_q15(recv_buffer, 0x800, recv_buffer, bytes_received / 2);
+			  Rx_Process(recv_buffer, decompressed_audio_buff);
 
-			*recv_buff_size += bytes_received / 2;
+			  for(int i = 0; i < N_MIC_SAMPLES; ++i){
+				  play_audio_buff[i] = (uint16_t) (decompressed_audio_buff[i] + 1.0f) * 2048;
+			  }
 
-			if (*recv_buff_size >= N_MIC_SAMPLES) {
-				*recv_buff_size = 0;
+//			  arm_offset_f32(decompressed_audio_buff, 1.0f, decompressed_audio_buff, N_MIC_SAMPLES);
+//			  arm_scale_f32(decompressed_audio_buff, 1.0f, decompressed_audio_buff, N_MIC_SAMPLES);
 
-				HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
-				HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1,
-						(uint32_t*) (
-								curr_unused_recv_buff ?
-										recv_mic_sample_buff2 :
-										recv_mic_sample_buff1), N_MIC_SAMPLES,
-						DAC_ALIGN_12B_R);
+			  HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+			  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *) recv_buffer, N_MIC_SAMPLES, DAC_ALIGN_12B_R);
 
-				curr_unused_recv_buff = !curr_unused_recv_buff;
-			}
+			  curr_unused_recv_buff = !curr_unused_recv_buff;
+		  }
 
-			break;
-		case SEND:
-			if (switch_states) {
-				switch_states = 0;
-				state = STANDBY;
 
-				if (WIFI_CloseClientConnection(SEND_SOCK) != WIFI_STATUS_OK) {
-					Error_Handler();
-				}
 
-				if (WIFI_StartServer(RECV_SOCK, WIFI_UDP_PROTOCOL, 0,
-						"recv_server", 90) != WIFI_STATUS_OK) {
-					Error_Handler();
-				}
 
-				continue;
+		  break;
+	  case SEND:
+		  if(switch_states){
+			  switch_states = 0;
+			  state = STANDBY;
 
-			}
+			  if(WIFI_CloseClientConnection(SEND_SOCK) != WIFI_STATUS_OK){
+				  Error_Handler();
+			  }
 
-			if (ready_to_send_full_buff) {
-				const float DFSDM_MAX_VAL = 0x8000; // Use the max value of DFSDM setup
 
-				for (int i = 0; i < FRAME_SIZE; ++i) {
-					// Convert int32_t to float and normalize to [-1.0, 1.0]
-					raw_mic_float_buff[i] = (float) send_mic_sample_buff[i] / DFSDM_MAX_VAL;
-				}
+			  if(WIFI_StartServer(RECV_SOCK, WIFI_UDP_PROTOCOL, 0, "recv_server", 90) != WIFI_STATUS_OK){
+				  Error_Handler();
+			  }
 
-				// 2. VAE Processing: Raw Float -> Indices (MuLaw -> Encoder -> VQ)
-				terminal_print("Tx start \r\n");
-				Tx_Process(raw_mic_float_buff, compressed_indices);
-			   	terminal_print("Tx end \r\n");
+			  continue;
 
-				// 3. Update Send Buffer Pointer (We are sending the compressed data)
-		    	// We send the small indices buffer instead of send_mic_sample_buff
-				// The main loop will now send 128 bytes instead of 1024 bytes!
+		  }
 
-				// VAE_ENCODE END */
-				uint16_t data_sent = 0;
-//				if (WIFI_SendData(SEND_SOCK,
-//						(const uint8_t*) send_mic_sample_buff,
-//						N_MIC_SAMPLES * 2, &data_sent, 0) != WIFI_STATUS_OK) {
-//					terminal_print("Failed to send buffer\r\n");
-//				}
-				if (WIFI_SendData(SEND_SOCK,
-					(const uint8_t*) compressed_indices,
-					NUM_INDICES * 2, &data_sent, 0) != WIFI_STATUS_OK) {
-					terminal_print("Failed to send buffer\r\n");
-					}
+		  if(ready_to_send_full_buff){
+			  uint16_t data_sent = 0;
 
-				ready_to_send_full_buff = 0;
-			}
-		}
+			  //call to VAE
+			  Tx_Process(send_mic_sample_buff, compressed_indices);
 
-	}
+			  if(WIFI_SendData(SEND_SOCK, (const uint8_t *) compressed_indices, N_INDICES*2, &data_sent, 0) != WIFI_STATUS_OK){
+				  terminal_print("Failed to send buffer\r\n");
+			  }
+
+			  ready_to_send_full_buff = 0;
+		  }
+	  }
+  }
   /* USER CODE END 3 */
 }
 
@@ -434,7 +384,7 @@ static void MX_DFSDM1_Init(void)
   hdfsdm1_filter0.Init.RegularParam.FastMode = ENABLE;
   hdfsdm1_filter0.Init.RegularParam.DmaMode = ENABLE;
   hdfsdm1_filter0.Init.FilterParam.SincOrder = DFSDM_FILTER_SINC3_ORDER;
-  hdfsdm1_filter0.Init.FilterParam.Oversampling = 120;
+  hdfsdm1_filter0.Init.FilterParam.Oversampling = 240;
   hdfsdm1_filter0.Init.FilterParam.IntOversampling = 1;
   if (HAL_DFSDM_FilterInit(&hdfsdm1_filter0) != HAL_OK)
   {
@@ -452,7 +402,7 @@ static void MX_DFSDM1_Init(void)
   hdfsdm1_channel2.Init.Awd.FilterOrder = DFSDM_CHANNEL_FASTSINC_ORDER;
   hdfsdm1_channel2.Init.Awd.Oversampling = 1;
   hdfsdm1_channel2.Init.Offset = 0;
-  hdfsdm1_channel2.Init.RightBitShift = 0x09;
+  hdfsdm1_channel2.Init.RightBitShift = 0x08;
   if (HAL_DFSDM_ChannelInit(&hdfsdm1_channel2) != HAL_OK)
   {
     Error_Handler();
@@ -488,7 +438,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 0;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 6000;
+  htim2.Init.Period = 12000;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -644,16 +594,15 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-void btn_isr() {
-	if (state == STANDBY) {
+
+void btn_isr(){
+	if(state == STANDBY){
 		HAL_DFSDM_FilterRegularStop_DMA(&hdfsdm1_filter0);
-		if (curr_unused_raw_buff) {
-			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0,
-					raw_mic_sample_buff2, N_MIC_SAMPLES);
+		if(curr_unused_raw_buff){
+			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff2, N_MIC_SAMPLES);
 			curr_unused_raw_buff = 0;
 		} else {
-			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0,
-					raw_mic_sample_buff1, N_MIC_SAMPLES);
+			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1, N_MIC_SAMPLES);
 			curr_unused_raw_buff = 1;
 		}
 	} else {
@@ -663,118 +612,62 @@ void btn_isr() {
 
 }
 
-void HAL_DFSDM_FilterRegConvCpltCallback(
-		DFSDM_Filter_HandleTypeDef *hdfsdm_filter) {
-	if (state != SEND) {
+
+void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef* hdfsdm_filter){
+	if(state != SEND){
 		return;
 	}
 
-	if (ready_to_send_full_buff) {
+	if(ready_to_send_full_buff){
 		terminal_print("Failed to send mic samples in time, overwriting\r\n");
 	}
 	ready_to_send_full_buff = 1;
+	HAL_DFSDM_FilterRegularStop_DMA(&hdfsdm1_filter0);
 
-	// 1. Normalize and Convert to Float (required for VAE)
-	// Assuming DFSDM output is centered around 0 and max range is 2^23 (or similar, 0x7FFFFF)
+	const uint32_t MAX_DFSDM_VAL = (1 << 23) - 1;
 
-	// change below shift depending on the sensitivity want in the mic
+	// change below shift depending on the sensitivity you want in the mic
 	// Ex: 10 better at recording louder sounds, 8 better at recording quieter sounds
-		/* // change below shift depending on the sensitivity want in the mic*/
-		// Ex: 10 better at recording louder sounds, 8 better at recording quieter sounds
-		if (curr_unused_raw_buff) {
-			for (int i = 0; i < N_MIC_SAMPLES; ++i) {
-				send_mic_sample_buff[i] = (int16_t) (raw_mic_sample_buff2[i]);
-			}
-			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff2,
-					N_MIC_SAMPLES);
-			curr_unused_raw_buff = 0;
-		} else {
-			for (int i = 0; i < N_MIC_SAMPLES; ++i) {
-				send_mic_sample_buff[i] = (int16_t) (raw_mic_sample_buff1[i]);
-			}
-			HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1,
-					N_MIC_SAMPLES);
-			curr_unused_raw_buff = 1;
+	if(curr_unused_raw_buff){
+		for(int i = 0; i < N_MIC_SAMPLES; ++i){
+			send_mic_sample_buff[i] = (float) raw_mic_sample_buff2[i] / MAX_DFSDM_VAL;
 		}
-
-
-	    if (curr_unused_raw_buff) { // raw_mic_sample_buff2 was just filled
-	        HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1, N_MIC_SAMPLES);
-	        curr_unused_raw_buff = 0; // Next unused is buff1
-	    } else { // raw_mic_sample_buff1 was just filled
-	        HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff2, N_MIC_SAMPLES);
-	        curr_unused_raw_buff = 1; // Next unused is buff2
-	    }
-
-	}
-
-//void HAL_DFSDM_FilterRegConvCpltCallback(DFSDM_Filter_HandleTypeDef *hdfsdm_filter) {
-//    // 1. Safety Check
-//    terminal_print("entered callback\r\n");
-//
-//    if (state != SEND) {
-//    	terminal_print("not send\r\n");
-//    	return;
-//    }
-//
-//    // 2. Identify the buffer that DMA just finished filling
-//    // This fixes the "source_raw_buff undeclared" error
-//    int32_t *source_raw_buff = curr_unused_raw_buff ? raw_mic_sample_buff1 : raw_mic_sample_buff2;
-//
-//    /* --- VAE ENCODE START --- */
-//
-//    // 3. Normalize: Convert 24-bit Int to Float
-//    // Note: 0x8000 is a conservative gain. If audio is too quiet, try 0x800.
-//    const float DFSDM_MAX_VAL = 0x8000;
-//
-//    for (int i = 0; i < FRAME_SIZE; ++i) {
-//        raw_mic_float_buff[i] = (float) source_raw_buff[i] / DFSDM_MAX_VAL;
-//    }
-//
-//    // 4. Encode: Compress Float Audio -> 64 Indices
-//    // This writes the result directly into 'compressed_indices' (Shared Memory)
-//    terminal_print("Tx start \r\n");
-//    Tx_Process(raw_mic_float_buff, compressed_indices);
-//    terminal_print("Tx end \r\n");
-//
-//    // 5. Signal Main Loop
-//    // Instead of "ready_to_send_full_buff" (which triggers Wi-Fi),
-//    // we set this flag to tell the main loop to read from memory.
-//    packet_available = 1;
-//
-//    /* --- VAE ENCODE END --- */
-//
-//    // 6. Restart DMA for the NEXT buffer (Ping-Pong Logic)
-//    // We strictly alternate buffers here to ensure continuous recording.
-//    if (curr_unused_raw_buff) {
-//        // We just finished buff1, so we switch to filling buff2
-//        HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff2, N_MIC_SAMPLES);
-//        curr_unused_raw_buff = 0;
-//    } else {
-//        // We just finished buff2, so we switch to filling buff1
-//        HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1, N_MIC_SAMPLES);
-//        curr_unused_raw_buff = 1;
-//    }
-//}
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-	switch (GPIO_Pin) {
-	case (BTN_Pin): {
-		btn_isr();
-		break;
-	}
-	case (DATA_RDY_SPI_Pin): {
-		SPI_WIFI_ISR();
-		break;
-	}
-	default: {
-		break;
-	}
+		HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff2, N_MIC_SAMPLES);
+		curr_unused_raw_buff = 0;
+	} else {
+		for(int i = 0; i < N_MIC_SAMPLES; ++i){
+			send_mic_sample_buff[i] = (float) raw_mic_sample_buff1[i] / MAX_DFSDM_VAL;
+		}
+		HAL_DFSDM_FilterRegularStart_DMA(&hdfsdm1_filter0, raw_mic_sample_buff1, N_MIC_SAMPLES);
+		curr_unused_raw_buff = 1;
 	}
 }
 
-void terminal_print(const char *msg) {
-	HAL_UART_Transmit(&huart1, (uint8_t*) msg, strlen(msg), 100);
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  switch (GPIO_Pin)
+  {
+    case (BTN_Pin):
+    {
+      btn_isr();
+      break;
+    }
+    case (DATA_RDY_SPI_Pin):
+    {
+      SPI_WIFI_ISR();
+      break;
+    }
+    default:
+    {
+      break;
+    }
+  }
+}
+
+
+void terminal_print(const char* msg){
+	HAL_UART_Transmit(&huart1, (uint8_t *) msg, strlen(msg), 100);
 }
 /* USER CODE END 4 */
 
@@ -785,10 +678,11 @@ void terminal_print(const char *msg) {
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-	/* User can add his own implementation to report the HAL error return state */
-	__disable_irq();
-	while (1) {
-	}
+  /* User can add his own implementation to report the HAL error return state */
+  __disable_irq();
+  while (1)
+  {
+  }
   /* USER CODE END Error_Handler_Debug */
 }
 #ifdef USE_FULL_ASSERT
